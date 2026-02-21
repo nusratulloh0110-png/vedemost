@@ -15,7 +15,8 @@ let state = {
     attendance: [],
     currentDate: new Date().toISOString().split('T')[0],
     activeTab: 'journal', // 'journal', 'groups', 'settings'
-    loading: false
+    loading: false,
+    error: null
 };
 
 async function init() {
@@ -63,6 +64,7 @@ function startLoadingTimeout() {
         if (state.loading) {
             console.warn("Loading timeout reached. Resetting loading state.");
             state.loading = false;
+            state.error = "Время ожидания ответа от сервера истекло. Проверьте VPN или ключ API.";
             render();
         }
     }, 15000); // 15 секунд
@@ -115,8 +117,7 @@ async function loadProfile() {
         await loadData();
     } catch (err) {
         console.error("Критическая ошибка loadProfile:", err);
-        const errorMsg = err.message || JSON.stringify(err);
-        alert(`Ошибка при загрузке данных: ${errorMsg}\n\nПроверьте API ключ и URL в main.js, а также наличие таблиц в Supabase.`);
+        state.error = err.message || JSON.stringify(err);
     } finally {
         state.loading = false;
         if (loadingTimeout) clearTimeout(loadingTimeout);
@@ -258,18 +259,25 @@ function renderSidebar() {
     if (!state.profile) {
         if (state.loading) {
             return `<aside class="sidebar glass"><p class="p-4 text-xs font-bold text-emerald-500 animate-pulse">Загрузка профиля...</p></aside>`;
-        } else {
-            return `
-                <aside class="sidebar glass">
-                    <div class="brand mb-4">
-                        <h2 class="brand-text text-xl font-bold text-red-400">Ошибка!</h2>
-                        <p class="text-[10px] text-text-muted">Профиль не загружен.</p>
-                    </div>
+        }
+
+        return `
+            <aside class="sidebar glass">
+                <div class="brand mb-4">
+                    <h2 class="brand-text text-xl font-bold text-red-400">Ошибка!</h2>
+                    <p class="text-[10px] text-red-300 font-bold mt-1">Детали: ${state.error || 'Профиль не загружен'}</p>
+                </div>
+                <div class="space-y-2">
                     <button onclick="logout()" class="btn btn-secondary w-full text-xs">Перезайти</button>
                     <button onclick="location.reload()" class="btn btn-primary w-full text-xs mt-2">Обновить</button>
-                </aside>
-            `;
-        }
+                </div>
+                <div class="mt-4 p-3 bg-red-500/10 rounded-xl border border-red-500/20">
+                    <p class="text-[9px] text-text-secondary leading-normal">
+                        Совет: Убедитесь, что вы вставили <b>Anon Key</b> (eyJ...) в начало файла <code>main.js</code> и выполнили SQL скрипт.
+                    </p>
+                </div>
+            </aside>
+        `;
     }
 
     const roleMap = { admin: 'Администратор', tutor: 'Тютор', starosta: 'Староста' };
