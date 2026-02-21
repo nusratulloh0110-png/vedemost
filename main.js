@@ -20,6 +20,14 @@ let state = {
     error: null
 };
 
+// Функция-обертка для предотвращения бесконечного ожидания ответа от сервера
+function withTimeout(promise, timeoutMs = 10000, stepName = 'Запрос') {
+    return Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error(`Превышено время ожидания (${stepName}). Проверьте соединение или API ключи.`)), timeoutMs))
+    ]);
+}
+
 async function init() {
     try {
         console.log("Vedomost PRO: Запуск инициализации...");
@@ -34,7 +42,8 @@ async function init() {
 
         // Получаем текущую сессию
         state.loadingStep = 'Проверка сессии...';
-        const { data: { session } } = await supabaseClient.auth.getSession();
+        const { data: { session } } = await withTimeout(supabaseClient.auth.getSession(), 10000, 'Вход в систему');
+
         if (session) {
             state.user = session.user;
             await loadProfile();
@@ -43,19 +52,10 @@ async function init() {
         }
     } catch (err) {
         console.error("Критическая ошибка при запуске:", err);
-        const app = document.getElementById('app');
-        if (app) {
-            app.innerHTML = `
-                <div class="fixed inset-0 flex items-center justify-center p-4 bg-red-900/10">
-                    <div class="glass glass-card max-w-sm w-full text-center">
-                        <h2 class="text-xl font-bold text-red-500 mb-2">Ошибка!</h2>
-                        <p class="text-sm text-text-secondary">${err.message}</p>
-                        <button onclick="location.reload()" class="btn btn-secondary mt-4 w-full">Обновить</button>
-                    </div>
-                </div>
-            `;
-        }
+        state.error = "Не удалось подключиться к серверу. " + err.message;
+        state.user = null; // Показываем экран входа как запасной вариант
     } finally {
+        state.loading = false;
         render();
     }
 }
@@ -85,11 +85,11 @@ async function loadProfile() {
 
     try {
         console.log("Fetching profile for:", state.user.id);
-        const { data: profile, error } = await supabaseClient
-            .from('profiles')
-            .select('*')
-            .eq('id', state.user.id)
-            .single();
+        const { data: profile, error } = await withTimeout(
+            supabaseClient.from('profiles').select('*').eq('id', state.user.id).single(),
+            10000,
+            'Загрузка профиля'
+        );
 
         if (error) {
             console.error("Profile Error:", error);
@@ -114,7 +114,11 @@ async function loadProfile() {
         // Загрузка групп (параллельно для скорости)
         state.loadingStep = 'Загрузка групп...';
         if (state.profile.role === 'admin' || state.profile.role === 'tutor') {
-            const { data: groups, error: gError } = await supabaseClient.from('groups').select('*');
+            const { data: groups, error: gError } = await withTimeout(
+                supabaseClient.from('groups').select('*'),
+                10000,
+                'Получение групп'
+            );
             if (gError) console.error("Groups fetch failed:", gError);
             state.groups = groups || [];
         } else {
@@ -145,12 +149,20 @@ async function loadData() {
             return;
         }
 
-        const [studentsRes, attendanceRes] = await Promise.all([
-            state.selectedGroupId
-                ? supabaseClient.from('students').select('*').eq('group_id', state.selectedGroupId)
-                : supabaseClient.from('students').select('*').limit(100), // Ограничим админа для скорости
-            supabaseClient.from('attendance').select('*').eq('date', state.currentDate)
-        ]);
+        state.loadingStep = 'Загрузка журнала...';
+        // Используем Promise.all для параллельной загрузки
+        const results = await withTimeout(
+            Promise.all([
+                (state.selectedGroupId
+                    ? supabaseClient.from('students').select('*').eq('group_id', state.selectedGroupId)
+                    : supabaseClient.from('students').select('*').limit(100)),
+                supabaseClient.from('attendance').select('*').eq('date', state.currentDate)
+            ]),
+            15000,
+            'Загрузка данных журнала'
+        );
+
+        const [studentsRes, attendanceRes] = results;
 
         if (studentsRes.error) console.error("Students load error:", studentsRes.error);
         if (attendanceRes.error) console.error("Attendance load error:", attendanceRes.error);
