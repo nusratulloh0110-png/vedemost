@@ -113,7 +113,7 @@ async function loadProfile() {
 
         // Загрузка групп (параллельно для скорости)
         state.loadingStep = 'Загрузка групп...';
-        if (state.profile.role === 'admin' || state.profile.role === 'tutor') {
+        if (state.profile?.role === 'admin' || state.profile?.role === 'tutor') {
             const { data: groups, error: gError } = await withTimeout(
                 supabaseClient.from('groups').select('*'),
                 10000,
@@ -314,7 +314,7 @@ function renderSidebar() {
             <div class="brand mb-4">
                 <h2 class="brand-text text-xl font-bold">Vedomost <span class="text-emerald-500">PRO</span></h2>
                 <div class="text-[10px] text-emerald-500 font-bold uppercase tracking-widest mt-1">
-                    ${roleMap[state.profile.role] || 'Пользователь'}
+                    ${roleMap[state.profile?.role] || 'Пользователь'}
                 </div>
             </div>
             
@@ -322,7 +322,7 @@ function renderSidebar() {
                 <div class="nav-item ${state.activeTab === 'journal' ? 'active' : ''}" onclick="switchTab('journal')">
                     <span>📋</span> <span class="nav-text">Журнал</span>
                 </div>
-                ${state.profile.role === 'admin' ? `
+                ${state.profile?.role === 'admin' ? `
                 <div class="nav-item ${state.activeTab === 'groups' ? 'active' : ''}" onclick="switchTab('groups')">
                     <span>👥</span> <span class="nav-text">Группы</span>
                 </div>
