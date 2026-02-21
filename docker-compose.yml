@@ -1,0 +1,7 @@
+services:
+  vedomost:
+    build: .
+    image: vedomost-pro:latest
+    ports:
+      - "80:80"
+    restart: always
