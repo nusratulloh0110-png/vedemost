@@ -350,13 +350,18 @@ function renderSidebar() {
 
 
 function renderMobileNav() {
+    if (!state.user) return '';
+
+    // Показываем минимальный навигатор, если профиль еще грузится
+    const isAdmin = state.profile && state.profile.role === 'admin';
+
     return `
         <div class="mobile-nav">
             <div class="mobile-nav-item ${state.activeTab === 'journal' ? 'active' : ''}" onclick="switchTab('journal')">
                 <span class="text-xl">📋</span>
                 <span>Журнал</span>
             </div>
-            ${state.profile.role === 'admin' ? `
+            ${isAdmin ? `
             <div class="mobile-nav-item ${state.activeTab === 'groups' ? 'active' : ''}" onclick="switchTab('groups')">
                 <span class="text-xl">👥</span>
                 <span>Группы</span>
