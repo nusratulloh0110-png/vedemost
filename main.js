@@ -16,12 +16,15 @@ let state = {
     currentDate: new Date().toISOString().split('T')[0],
     activeTab: 'journal', // 'journal', 'groups', 'settings'
     loading: false,
+    loadingStep: '',
     error: null
 };
 
 async function init() {
     try {
         console.log("Vedomost PRO: Запуск инициализации...");
+        state.loadingStep = 'Старт системы...';
+        state.error = null;
 
         if (typeof supabase === 'undefined') {
             throw new Error("Supabase не загружен. Проверьте интернет или ссылку в HTML.");
@@ -30,6 +33,7 @@ async function init() {
         supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // Получаем текущую сессию
+        state.loadingStep = 'Проверка сессии...';
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (session) {
             state.user = session.user;
@@ -74,6 +78,8 @@ async function loadProfile() {
     if (!state.user) return;
 
     state.loading = true;
+    state.loadingStep = 'Загрузка профиля...';
+    state.error = null;
     render();
     startLoadingTimeout();
 
@@ -106,6 +112,7 @@ async function loadProfile() {
         }
 
         // Загрузка групп (параллельно для скорости)
+        state.loadingStep = 'Загрузка групп...';
         if (state.profile.role === 'admin' || state.profile.role === 'tutor') {
             const { data: groups, error: gError } = await supabaseClient.from('groups').select('*');
             if (gError) console.error("Groups fetch failed:", gError);
@@ -128,6 +135,7 @@ async function loadProfile() {
 
 async function loadData() {
     console.log("Loading data for group:", state.selectedGroupId);
+    state.loadingStep = 'Загрузка журнала...';
     try {
         // Если это админ без выбранной группы, мы можем либо загрузить всё, либо ничего.
         // Чтобы не вешать браузер тонной данных, загрузим только если группа выбрана или если это журнал админа.
@@ -214,12 +222,20 @@ function render() {
             </div>
             ${renderModals()}
             ${state.loading ? `
-                <div class="fixed inset-0 z-[200] bg-black/60 backdrop-blur-md flex flex-col items-center justify-center">
-                    <div class="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p class="text-emerald-500 font-bold animate-pulse">Загрузка данных...</p>
-                    <button onclick="state.loading=false; render();" class="mt-8 text-[10px] text-text-muted hover:text-white uppercase tracking-widest border border-white/10 px-4 py-2 rounded-full transition-all">
-                        Отменить ожидание
-                    </button>
+                <div class="fixed inset-0 z-[200] bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
+                    <div class="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-6"></div>
+                    <p class="text-emerald-500 text-xl font-bold mb-2 animate-pulse">${state.loadingStep || 'Загрузка данных...'}</p>
+                    <p class="text-text-secondary text-sm mb-8 max-w-xs">
+                        Это может занять время, если интернет медленный или ключи Supabase неверны.
+                    </p>
+                    <div class="flex flex-col gap-3 w-full max-w-xs">
+                        <button onclick="state.loading=false; render();" class="btn btn-secondary w-full uppercase tracking-widest text-xs py-3">
+                            Продолжить без ожидания
+                        </button>
+                        <button onclick="logout()" class="text-red-400 text-[10px] uppercase font-bold hover:text-red-300">
+                            Выйти и зайти заново
+                        </button>
+                    </div>
                 </div>
             ` : ''}
         `;
