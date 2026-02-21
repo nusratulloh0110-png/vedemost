@@ -17,7 +17,31 @@ let state = {
     activeTab: 'journal', // 'journal', 'groups', 'settings'
     loading: false,
     loadingStep: '',
-    error: null
+    error: null,
+    allStudents: [] // Для админ-панели управления группами
+};
+
+window.showToast = (message, type = 'success') => {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <span style="font-size: 1.25rem">${type === 'success' ? '✅' : '❌'}</span>
+        <span>${message}</span>
+    `;
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.4s ease-in forwards';
+        setTimeout(() => toast.remove(), 400);
+    }, 4000);
 };
 
 // Функция-обертка для предотвращения бесконечного ожидания ответа от сервера
@@ -139,23 +163,29 @@ async function loadProfile() {
 
 async function loadData() {
     console.log("Loading data for group:", state.selectedGroupId);
-    state.loadingStep = 'Загрузка журнала...';
+    state.loadingStep = 'Загрузка данных...';
     try {
-        // Если это админ без выбранной группы, мы можем либо загрузить всё, либо ничего.
-        // Чтобы не вешать браузер тонной данных, загрузим только если группа выбрана или если это журнал админа.
-        if (!state.selectedGroupId && state.profile?.role !== 'admin' && state.profile?.role !== 'tutor') {
+        const isAdmin = state.profile?.role === 'admin' || state.profile?.role === 'tutor';
+
+        // Если админ — загружаем всех студентов для управления ими в табе "Группы"
+        if (isAdmin) {
+            const { data: all } = await supabaseClient.from('students').select('*').order('full_name');
+            state.allStudents = all || [];
+        }
+
+        if (!state.selectedGroupId && !isAdmin) {
             state.students = [];
             state.attendance = [];
             return;
         }
 
-        state.loadingStep = 'Загрузка журнала...';
-        // Используем Promise.all для параллельной загрузки
+        const studentQuery = state.selectedGroupId
+            ? supabaseClient.from('students').select('*').eq('group_id', state.selectedGroupId)
+            : supabaseClient.from('students').select('*').limit(100);
+
         const results = await withTimeout(
             Promise.all([
-                (state.selectedGroupId
-                    ? supabaseClient.from('students').select('*').eq('group_id', state.selectedGroupId)
-                    : supabaseClient.from('students').select('*').limit(100)),
+                studentQuery.order('full_name'),
                 supabaseClient.from('attendance').select('*').eq('date', state.currentDate)
             ]),
             15000,
@@ -185,8 +215,9 @@ async function login(email, password) {
         if (error) throw error;
         state.user = data.user;
         await loadProfile();
+        showToast('Вы успешно вошли!');
     } catch (err) {
-        alert('Ошибка входа: ' + err.message);
+        showToast('Ошибка входа: ' + err.message, 'error');
     } finally {
         state.loading = false;
         render();
@@ -409,20 +440,55 @@ window.switchTab = (tab) => {
 };
 
 function renderGroups() {
+    const isAdmin = state.profile?.role === 'admin';
     return `
         <div class="glass glass-card mb-8">
-            <div class="flex gap-4 mb-6 flex-header">
-                <input type="text" id="new-group-name" placeholder="Название новой группы" class="input-premium">
+            <h3 class="text-xl font-bold mb-6">Управление группами</h3>
+            ${isAdmin ? `
+            <div class="flex gap-4 mb-8 flex-header">
+                <input type="text" id="new-group-name" placeholder="Название новой группы (напр. 211-22)" class="input-premium">
                 <button onclick="createGroup()" class="btn btn-primary whitespace-nowrap">+ Создать группу</button>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                ${state.groups.map(g => `
+            ` : ''}
+            
+            <div class="space-y-6">
+                ${state.groups.map(g => {
+        // Fetch students for this group if we were doing it reactively, but for now we have state.students
+        // Let's filter students by group_id
+        const groupStudents = state.allStudents ? state.allStudents.filter(s => s.group_id === g.id) : [];
+
+        return `
                     <div class="bg-white/5 p-6 rounded-2xl border border-white/10 hover:border-emerald-500/50 transition-all">
-                        <h3 class="text-xl font-bold mb-2">${g.name}</h3>
-                        <p class="text-text-muted text-[10px] mb-4">ID: ${g.id}</p>
-                        <button onclick="deleteGroup('${g.id}')" class="text-xs text-red-500 font-bold hover:underline">Удалить группу</button>
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-xl font-bold">${g.name}</h3>
+                                <p class="text-text-muted text-[10px]">ID: ${g.id}</p>
+                            </div>
+                            ${isAdmin ? `
+                            <button onclick="deleteGroup('${g.id}')" class="text-xs text-red-500 font-bold hover:underline">Удалить группу</button>
+                            ` : ''}
+                        </div>
+
+                        ${isAdmin ? `
+                        <div class="mt-4 pt-4 border-t border-white/5">
+                            <p class="text-[10px] font-bold text-text-muted uppercase mb-3 text-emerald-500">Добавить студента в эту группу</p>
+                            <div class="flex gap-2">
+                                <input type="text" id="student-name-${g.id}" placeholder="ФИО Студента" class="input-premium text-sm py-2">
+                                <button onclick="addStudent('${g.id}')" class="btn btn-primary py-2 px-4 shadow-none">+</button>
+                            </div>
+                            
+                            <div class="mt-4 space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                                ${groupStudents.length > 0 ? groupStudents.map(s => `
+                                    <div class="flex justify-between items-center p-2 bg-white/5 rounded-lg text-sm border border-white/5">
+                                        <span>${s.full_name}</span>
+                                        <button onclick="removeStudent('${s.id}')" class="text-red-400 hover:text-red-300 text-xs">✕</button>
+                                    </div>
+                                `).join('') : '<p class="text-[10px] text-text-muted italic">В группе пока нет студентов</p>'}
+                            </div>
+                        </div>
+                        ` : ''}
                     </div>
-                `).join('')}
+                `}).join('')}
             </div>
         </div>
     `;
@@ -434,8 +500,46 @@ window.createGroup = async () => {
     state.loading = true;
     render();
     const { error } = await supabaseClient.from('groups').insert([{ name }]);
-    if (error) alert(error.message);
-    else await loadProfile();
+    if (error) showToast(error.message, 'error');
+    else {
+        showToast('Группа успешно создана!');
+        await loadProfile(); // Reloads groups and data
+    }
+    state.loading = false;
+    render();
+}
+
+window.addStudent = async (groupId) => {
+    const input = document.getElementById(`student-name-${groupId}`);
+    const full_name = input.value;
+    if (!full_name) return;
+
+    state.loading = true;
+    render();
+    const { error } = await supabaseClient.from('students').insert([{ full_name, group_id: groupId }]);
+
+    if (error) showToast(error.message, 'error');
+    else {
+        showToast(`Студент ${full_name} добавлен!`);
+        input.value = '';
+        await loadData(); // Reloads students
+    }
+    state.loading = false;
+    render();
+}
+
+window.removeStudent = async (studentId) => {
+    if (!confirm('Вы уверены, что хотите удалить студента?')) return;
+
+    state.loading = true;
+    render();
+    const { error } = await supabaseClient.from('students').delete().eq('id', studentId);
+
+    if (error) showToast(error.message, 'error');
+    else {
+        showToast('Студент удален');
+        await loadData();
+    }
     state.loading = false;
     render();
 }
@@ -487,7 +591,7 @@ window.createNewUser = async () => {
     const group_id = document.getElementById('reg-group').value || null;
 
     if (!full_name || !email || !password) {
-        alert("Пожалуйста, заполните все обязательные поля (ФИО, Email, Пароль).");
+        showToast("Заполните ФИО, Email и Пароль", 'error');
         return;
     }
 
@@ -505,7 +609,7 @@ window.createNewUser = async () => {
 
         if (error) throw error;
 
-        alert(`Пользователь ${full_name} успешно создан!`);
+        showToast(`Аккаунт для ${full_name} создан!`);
         // Clear fields
         document.getElementById('reg-name').value = '';
         document.getElementById('reg-email').value = '';
@@ -515,7 +619,7 @@ window.createNewUser = async () => {
         await loadUsers();
     } catch (err) {
         console.error("Create user error:", err);
-        alert("Ошибка при создании пользователя: " + err.message);
+        showToast("Ошибка: " + err.message, 'error');
     } finally {
         state.loading = false;
         render();
