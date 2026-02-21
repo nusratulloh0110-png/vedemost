@@ -14,11 +14,12 @@ let state = {
     students: [],
     attendance: [],
     currentDate: new Date().toISOString().split('T')[0],
-    activeTab: 'journal', // 'journal', 'groups', 'settings'
+    activeTab: 'journal', // 'journal', 'groups', 'settings', 'students'
     loading: false,
     loadingStep: '',
     error: null,
-    allStudents: [] // Для админ-панели управления группами
+    allStudents: [], // Для админ-панели управления студентами
+    allProfiles: [] // Для управления пользователями (админ)
 };
 
 window.showToast = (message, type = 'success') => {
@@ -33,7 +34,10 @@ window.showToast = (message, type = 'success') => {
     toast.className = `toast toast-${type}`;
     toast.innerHTML = `
         <span style="font-size: 1.25rem">${type === 'success' ? '✅' : '❌'}</span>
-        <span>${message}</span>
+        <div class="flex flex-col">
+            <span class="font-bold">${type === 'success' ? 'Успешно' : 'Ошибка'}</span>
+            <span class="text-xs opacity-90">${message}</span>
+        </div>
     `;
 
     container.appendChild(toast);
@@ -41,7 +45,31 @@ window.showToast = (message, type = 'success') => {
     setTimeout(() => {
         toast.style.animation = 'slideOut 0.4s ease-in forwards';
         setTimeout(() => toast.remove(), 400);
-    }, 4000);
+    }, 5000);
+};
+
+window.showConfirm = (message, onConfirm) => {
+    const modalHtml = `
+        <div class="modal-overlay animate-fade-in" id="confirm-modal">
+            <div class="glass glass-card max-w-sm w-full text-center">
+                <div class="text-4xl mb-4">🤔</div>
+                <h3 class="text-xl font-bold mb-2">Подтверждение</h3>
+                <p class="text-text-secondary text-sm mb-6">${message}</p>
+                <div class="flex gap-3">
+                    <button id="confirm-yes" class="btn btn-primary flex-1">Да, уверен</button>
+                    <button onclick="closeModal()" class="btn btn-secondary flex-1">Отмена</button>
+                </div>
+            </div>
+        </div>
+    `;
+    const container = document.getElementById('modal-container');
+    if (container) {
+        container.innerHTML = modalHtml;
+        document.getElementById('confirm-yes').onclick = () => {
+            closeModal();
+            onConfirm();
+        };
+    }
 };
 
 // Функция-обертка для предотвращения бесконечного ожидания ответа от сервера
@@ -169,8 +197,11 @@ async function loadData() {
 
         // Если админ — загружаем всех студентов для управления ими в табе "Группы"
         if (isAdmin) {
-            const { data: all } = await supabaseClient.from('students').select('*').order('full_name');
-            state.allStudents = all || [];
+            const { data: allS } = await supabaseClient.from('students').select('*').order('full_name');
+            state.allStudents = allS || [];
+
+            const { data: allP } = await supabaseClient.from('profiles').select('*').order('full_name');
+            state.allProfiles = allP || [];
         }
 
         if (!state.selectedGroupId && !isAdmin) {
@@ -254,11 +285,15 @@ function render() {
                         ${renderJournal()}
                     </div>
                     <div id="tab-groups" class="tab-content ${state.activeTab === 'groups' ? 'active' : ''}">
-                        ${renderHeader('Управление группами', 'Создание и редактирование групп')}
+                        ${renderHeader('Группы', 'Управление учебными группами')}
                         ${renderGroups()}
                     </div>
+                    <div id="tab-students" class="tab-content ${state.activeTab === 'students' ? 'active' : ''}">
+                        ${renderHeader('Студенты', 'Управление списком студентов')}
+                        ${renderStudentsTab()}
+                    </div>
                     <div id="tab-settings" class="tab-content ${state.activeTab === 'settings' ? 'active' : ''}">
-                        ${renderHeader('Настройки логинов', 'Управление доступами старост')}
+                        ${renderHeader('Пользователи', 'Управление доступами старост и тюторов')}
                         ${renderSettings()}
                     </div>
                 </main>
@@ -357,8 +392,11 @@ function renderSidebar() {
                 <div class="nav-item ${state.activeTab === 'groups' ? 'active' : ''}" onclick="switchTab('groups')">
                     <span>👥</span> <span class="nav-text">Группы</span>
                 </div>
+                <div class="nav-item ${state.activeTab === 'students' ? 'active' : ''}" onclick="switchTab('students')">
+                    <span>🎓</span> <span class="nav-text">Студенты</span>
+                </div>
                 <div class="nav-item ${state.activeTab === 'settings' ? 'active' : ''}" onclick="switchTab('settings')">
-                    <span>🔑</span> <span class="nav-text">Логины и Пароли</span>
+                    <span>🔑</span> <span class="nav-text">Доступы</span>
                 </div>
                 ` : ''}
             </nav>
@@ -397,9 +435,13 @@ function renderMobileNav() {
                 <span class="text-xl">👥</span>
                 <span>Группы</span>
             </div>
+            <div class="mobile-nav-item ${state.activeTab === 'students' ? 'active' : ''}" onclick="switchTab('students')">
+                <span class="text-xl">🎓</span>
+                <span>Студенты</span>
+            </div>
             <div class="mobile-nav-item ${state.activeTab === 'settings' ? 'active' : ''}" onclick="switchTab('settings')">
                 <span class="text-xl">🔑</span>
-                <span>Пароли</span>
+                <span>Доступы</span>
             </div>
             ` : ''}
 
@@ -446,7 +488,7 @@ function renderGroups() {
     const isAdmin = state.profile?.role === 'admin';
     return `
         <div class="glass glass-card mb-8">
-            <h3 class="text-xl font-bold mb-6">Управление группами</h3>
+            <h3 class="text-xl font-bold mb-6">Список групп</h3>
             ${isAdmin ? `
             <div class="flex gap-4 mb-8 flex-header">
                 <input type="text" id="new-group-name" placeholder="Название новой группы (напр. 211-22)" class="input-premium">
@@ -454,51 +496,26 @@ function renderGroups() {
             </div>
             ` : ''}
             
-            <div class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 ${state.groups.map(g => {
-        // Fetch students for this group if we were doing it reactively, but for now we have state.students
-        // Let's filter students by group_id
-        const groupStudents = state.allStudents ? state.allStudents.filter(s => s.group_id === g.id) : [];
-
+        const count = state.allStudents?.filter(s => s.group_id === g.id).length || 0;
         return `
-                    <div class="bg-white/5 p-6 rounded-2xl border border-white/10 hover:border-emerald-500/50 transition-all">
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
+                    <div class="bg-white/5 p-6 rounded-2xl border border-white/10 hover:border-emerald-500/50 transition-all flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start mb-2">
                                 <h3 class="text-xl font-bold">${g.name}</h3>
-                                <p class="text-text-muted text-[10px]">ID: ${g.id}</p>
+                                <div class="text-[10px] bg-emerald-500/20 text-emerald-500 px-2 py-1 rounded-lg font-bold">
+                                    ${count} студ.
+                                </div>
                             </div>
-                            ${isAdmin ? `
-                            <button onclick="deleteGroup('${g.id}')" class="text-xs text-red-500 font-bold hover:underline">Удалить группу</button>
-                            ` : ''}
+                            <p class="text-text-muted text-[10px] mb-4">ID: ${g.id}</p>
                         </div>
-
                         ${isAdmin ? `
-                        <div class="mt-4 pt-4 border-t border-white/5">
-                            <p class="text-[10px] font-bold text-text-muted uppercase mb-3 text-emerald-500">Добавить студента в эту группу</p>
-                            <div class="flex gap-2">
-                                <input type="text" id="student-name-${g.id}" placeholder="ФИО Студента" class="input-premium text-sm py-2">
-                                <button onclick="addStudent('${g.id}')" class="btn btn-primary py-2 px-4 shadow-none">+</button>
-                            </div>
-                            
-                            <div class="mt-4 space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
-                                ${groupStudents.length > 0 ? groupStudents.map(s => `
-                                    <div class="flex justify-between items-center p-2 bg-white/5 rounded-lg text-sm border border-white/5">
-                                        <span>${s.full_name}</span>
-                                        <button onclick="removeStudent('${s.id}')" class="text-red-400 hover:text-red-300 text-xs">✕</button>
-                                    </div>
-                                `).join('') : '<p class="text-[10px] text-text-muted italic">В группе пока нет студентов</p>'}
-                            </div>
-                        </div>
-                        ` : `
-                        <div class="mt-4 pt-4 border-t border-white/5">
-                            <p class="text-[10px] font-bold text-text-muted uppercase mb-2">Список студентов:</p>
-                            <div class="mt-4 space-y-1">
-                                ${groupStudents.length > 0 ? groupStudents.map(s => `
-                                    <div class="text-sm p-1 text-text-secondary">• ${s.full_name}</div>
-                                `).join('') : '<p class="text-[10px] text-text-muted italic">В группе пока нет студентов</p>'}
-                            </div>
-                        </div>
-                        `}
+                        <button onclick="showConfirm('Удалить группу ${g.name} и всех её студентов?', () => deleteGroup('${g.id}'))" 
+                                class="text-xs text-red-500 font-bold hover:underline self-start">
+                            Удалить группу
+                        </button>
+                        ` : ''}
                     </div>
                 `}).join('')}
             </div>
@@ -506,9 +523,66 @@ function renderGroups() {
     `;
 }
 
+function renderStudentsTab() {
+    if (state.profile?.role !== 'admin') return '<div class="p-10 text-center">Доступ запрещен</div>';
+
+    return `
+        <div class="glass glass-card mb-8">
+            <h3 class="text-xl font-bold mb-6">Добавить студента</h3>
+            <div class="flex gap-4 flex-header items-end">
+                <div class="flex-1">
+                    <label class="text-[10px] font-bold text-text-muted uppercase">ФИО Студента</label>
+                    <input type="text" id="new-student-name" placeholder="Фамилия Имя Отчество" class="input-premium mt-1">
+                </div>
+                <div class="flex-1">
+                    <label class="text-[10px] font-bold text-text-muted uppercase">Группа</label>
+                    <select id="new-student-group" class="input-premium mt-1">
+                        <option value="">— Выберите группу —</option>
+                        ${state.groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('')}
+                    </select>
+                </div>
+                <button onclick="addStudentGlobal()" class="btn btn-primary px-10">Добавить Студента</button>
+            </div>
+        </div>
+
+        <div class="glass glass-card">
+            <h3 class="text-xl font-bold mb-6">Все студенты</h3>
+            <div class="overflow-x-auto">
+                <table class="premium-table">
+                    <thead>
+                        <tr>
+                            <th>ФИО Студента</th>
+                            <th>Группа</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${state.allStudents.length > 0 ? state.allStudents.map(s => {
+        const groupName = state.groups.find(g => g.id === s.group_id)?.name || 'Неизвестно';
+        return `
+                            <tr>
+                                <td class="font-bold">${s.full_name}</td>
+                                <td><span class="badge badge-present">${groupName}</span></td>
+                                <td>
+                                    <button onclick="showConfirm('Удалить студента ${s.full_name}?', () => removeStudent('${s.id}'))" 
+                                            class="text-red-400 hover:text-red-300 font-bold text-xs">Удалить</button>
+                                </td>
+                            </tr>
+                            `;
+    }).join('') : '<tr><td colspan="3" class="text-center py-10 opacity-50">Студентов пока нет</td></tr>'}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
 window.createGroup = async () => {
     const name = document.getElementById('new-group-name').value;
-    if (!name) return;
+    if (!name) {
+        showToast("Введите название группы", 'error');
+        return;
+    }
     state.loading = true;
     render();
     const { error } = await supabaseClient.from('groups').insert([{ name }]);
@@ -521,40 +595,48 @@ window.createGroup = async () => {
     render();
 }
 
-window.addStudent = async (groupId) => {
-    const input = document.getElementById(`student-name-${groupId}`);
-    const full_name = input.value;
-    if (!full_name) return;
+window.addStudentGlobal = async () => {
+    const fullName = document.getElementById('new-student-name').value;
+    const groupId = document.getElementById('new-student-group').value;
 
-    state.loading = true;
-    render();
-    const { error } = await supabaseClient.from('students').insert([{ full_name, group_id: groupId }]);
-
-    if (error) showToast(error.message, 'error');
-    else {
-        showToast(`Студент ${full_name} добавлен!`);
-        input.value = '';
-        await loadData(); // Reloads students
+    if (!fullName || !groupId) {
+        showToast("Заполните ФИО и выберите группу", 'error');
+        return;
     }
-    state.loading = false;
-    render();
-}
-
-window.removeStudent = async (studentId) => {
-    if (!confirm('Вы уверены, что хотите удалить студента?')) return;
 
     state.loading = true;
     render();
-    const { error } = await supabaseClient.from('students').delete().eq('id', studentId);
 
-    if (error) showToast(error.message, 'error');
-    else {
-        showToast('Студент удален');
+    const { error } = await supabaseClient
+        .from('students')
+        .insert([{ full_name: fullName, group_id: groupId }]);
+
+    if (error) {
+        showToast(error.message, 'error');
+    } else {
+        showToast("Студент успешно добавлен");
+        document.getElementById('new-student-name').value = '';
         await loadData();
+        render();
     }
     state.loading = false;
     render();
-}
+};
+
+window.removeStudent = async (id) => {
+    state.loading = true;
+    render();
+    const { error } = await supabaseClient.from('students').delete().eq('id', id);
+    if (error) {
+        showToast(error.message, 'error');
+    } else {
+        showToast("Студент удален");
+        await loadData();
+        render();
+    }
+    state.loading = false;
+    render();
+};
 
 
 function renderSettings() {
@@ -591,6 +673,38 @@ function renderSettings() {
                 <div class="md:col-span-2 lg:col-span-5 mt-2">
                     <button onclick="createNewUser()" class="btn btn-primary w-full lg:w-auto px-10">Создать аккаунт</button>
                 </div>
+            </div>
+        </div>
+
+        <div class="glass glass-card">
+            <h3 class="text-xl font-bold mb-6">Существующие пользователи</h3>
+            <div class="overflow-x-auto">
+                <table class="premium-table">
+                    <thead>
+                        <tr>
+                            <th>ФИО</th>
+                            <th>Роль</th>
+                            <th>Группа</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${state.allProfiles.length > 0 ? state.allProfiles.map(p => {
+        const groupName = state.groups.find(g => g.id === p.group_id)?.name || '—';
+        const roleMap = { admin: 'Админ', tutor: 'Тютор', starosta: 'Староста' };
+        return `
+                            <tr>
+                                <td class="font-bold">${p.full_name}</td>
+                                <td><span class="badge badge-${p.role === 'admin' ? 'present' : 'excused'}">${roleMap[p.role]}</span></td>
+                                <td>${groupName}</td>
+                                <td>
+                                    <button onclick="editUserProfile('${p.id}')" class="text-accent-primary hover:underline text-xs mr-3">Изменить</button>
+                                </td>
+                            </tr>
+                            `;
+    }).join('') : '<tr><td colspan="4" class="text-center py-6 opacity-30">Пользователей нет</td></tr>'}
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -911,18 +1025,20 @@ window.saveUserProfile = async (userId) => {
     if (error) showToast(error.message, 'error');
     else {
         closeModal();
-        loadUsers();
+        loadData();
     }
 };
 
-window.deleteGroup = async (groupId) => {
-    if (!confirm('Вы уверены, что хотите удалить группу и всех студентов в ней?')) return;
-    const { error } = await supabaseClient.from('groups').delete().eq('id', groupId);
-    if (error) showToast(error.message, 'error');
-    else {
-        await loadProfile();
-        render();
-    }
+window.deleteGroup = (groupId) => {
+    showConfirm(`Удалить группу и всех студентов в ней?`, async () => {
+        const { error } = await supabaseClient.from('groups').delete().eq('id', groupId);
+        if (error) showToast(error.message, 'error');
+        else {
+            showToast("Группа удалена");
+            await loadData();
+            render();
+        }
+    });
 };
 
 // Вспомогательные функции
