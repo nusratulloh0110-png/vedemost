@@ -420,6 +420,9 @@ function renderHeader(title = 'Журнал посещаемости', subtitle 
             </div>
             ${state.activeTab === 'journal' ? `
             <div class="flex gap-4">
+                <button onclick="exportToExcel()" class="btn btn-secondary py-2">
+                    <span>📊</span> <span>Excel</span>
+                </button>
                 <input type="date" value="${state.currentDate}" id="date-picker" class="input-premium py-2 w-auto">
                 ${state.profile && state.profile.role !== 'starosta' ? `
                 <select id="group-select" class="input-premium py-2 w-auto">
@@ -486,7 +489,16 @@ function renderGroups() {
                                 `).join('') : '<p class="text-[10px] text-text-muted italic">В группе пока нет студентов</p>'}
                             </div>
                         </div>
-                        ` : ''}
+                        ` : `
+                        <div class="mt-4 pt-4 border-t border-white/5">
+                            <p class="text-[10px] font-bold text-text-muted uppercase mb-2">Список студентов:</p>
+                            <div class="mt-4 space-y-1">
+                                ${groupStudents.length > 0 ? groupStudents.map(s => `
+                                    <div class="text-sm p-1 text-text-secondary">• ${s.full_name}</div>
+                                `).join('') : '<p class="text-[10px] text-text-muted italic">В группе пока нет студентов</p>'}
+                            </div>
+                        </div>
+                        `}
                     </div>
                 `}).join('')}
             </div>
@@ -548,8 +560,8 @@ window.removeStudent = async (studentId) => {
 function renderSettings() {
     return `
         <div class="glass glass-card mb-8">
-            <h3 class="text-xl font-bold mb-6">Создать нового старосту</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+            <h3 class="text-xl font-bold mb-6">Создать нового пользователя</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
                 <div>
                     <label class="text-[10px] font-bold text-text-muted uppercase">ФИО</label>
                     <input type="text" id="reg-name" placeholder="Иван Иванов" class="input-premium mt-1">
@@ -563,14 +575,21 @@ function renderSettings() {
                     <input type="password" id="reg-password" placeholder="******" class="input-premium mt-1">
                 </div>
                 <div>
+                    <label class="text-[10px] font-bold text-text-muted uppercase">Роль</label>
+                    <select id="reg-role" class="input-premium mt-1" onchange="toggleRegGroup()">
+                        <option value="starosta">Староста</option>
+                        <option value="tutor">Тютор</option>
+                    </select>
+                </div>
+                <div id="reg-group-container">
                     <label class="text-[10px] font-bold text-text-muted uppercase">Группа</label>
                     <select id="reg-group" class="input-premium mt-1">
                         <option value="">— Выберите группу —</option>
                         ${state.groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('')}
                     </select>
                 </div>
-                <div class="md:col-span-2 lg:col-span-4 mt-2">
-                    <button onclick="createNewUser()" class="btn btn-primary w-full lg:w-auto px-10">Создать аккаунт старосты</button>
+                <div class="md:col-span-2 lg:col-span-5 mt-2">
+                    <button onclick="createNewUser()" class="btn btn-primary w-full lg:w-auto px-10">Создать аккаунт</button>
                 </div>
             </div>
         </div>
@@ -588,10 +607,16 @@ window.createNewUser = async () => {
     const full_name = document.getElementById('reg-name').value;
     const email = document.getElementById('reg-email').value;
     const password = document.getElementById('reg-password').value;
-    const group_id = document.getElementById('reg-group').value || null;
+    const role = document.getElementById('reg-role').value;
+    const group_id = role === 'starosta' ? document.getElementById('reg-group').value : null;
 
     if (!full_name || !email || !password) {
         showToast("Заполните ФИО, Email и Пароль", 'error');
+        return;
+    }
+
+    if (role === 'starosta' && !group_id) {
+        showToast("Для старосты нужно выбрать группу", 'error');
         return;
     }
 
@@ -603,7 +628,7 @@ window.createNewUser = async () => {
             in_email: email,
             in_password: password,
             in_full_name: full_name,
-            in_role: 'starosta',
+            in_role: role,
             in_group_id: group_id
         });
 
@@ -765,7 +790,7 @@ window.updateStatus = async (studentId, status) => {
             .insert([{ student_id: studentId, date: state.currentDate, status }]));
     }
 
-    if (error) alert('Ошибка обновления: ' + error.message);
+    if (error) showToast('Ошибка обновления: ' + error.message, 'error');
     else loadData();
 };
 
@@ -821,7 +846,7 @@ window.saveOptions = async (studentId) => {
             .insert([{ student_id: studentId, date: state.currentDate, status, comment }]));
     }
 
-    if (error) alert('Ошибка: ' + error.message);
+    if (error) showToast('Ошибка: ' + error.message, 'error');
     else {
         closeModal();
         loadData();
@@ -883,7 +908,7 @@ window.saveUserProfile = async (userId) => {
         .update({ full_name, role, group_id })
         .eq('id', userId);
 
-    if (error) alert(error.message);
+    if (error) showToast(error.message, 'error');
     else {
         closeModal();
         loadUsers();
@@ -893,7 +918,7 @@ window.saveUserProfile = async (userId) => {
 window.deleteGroup = async (groupId) => {
     if (!confirm('Вы уверены, что хотите удалить группу и всех студентов в ней?')) return;
     const { error } = await supabaseClient.from('groups').delete().eq('id', groupId);
-    if (error) alert(error.message);
+    if (error) showToast(error.message, 'error');
     else {
         await loadProfile();
         render();
@@ -908,6 +933,53 @@ window.closeModal = () => {
 window.renderModals = () => `
     <div id="modal-container"></div>
 `;
+
+window.toggleRegGroup = () => {
+    const role = document.getElementById('reg-role')?.value;
+    const container = document.getElementById('reg-group-container');
+    if (container) {
+        container.style.display = role === 'starosta' ? 'block' : 'none';
+    }
+};
+
+window.exportToExcel = () => {
+    if (!state.students || state.students.length === 0) {
+        showToast('Нет данных для экспорта', 'error');
+        return;
+    }
+
+    try {
+        const data = state.students.map(s => {
+            const att = state.attendance.find(a => a.student_id === s.id);
+            const statusMap = {
+                present: 'Присутствует',
+                absent: 'Отсутствует',
+                excused: 'Уважительная',
+                late: 'Опоздал',
+                left_early: 'Ушел раньше'
+            };
+            return {
+                'ФИО Студента': s.full_name,
+                'Статус': statusMap[att?.status] || 'Нет отметки',
+                'Комментарий': att?.comment || ''
+            };
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Посещаемость");
+
+        const group = state.groups.find(g => g.id === state.selectedGroupId);
+        const groupName = group ? group.name : 'Все_группы';
+        const filename = `Vedomost_${groupName}_${state.currentDate}.xlsx`;
+
+        XLSX.writeFile(workbook, filename);
+        showToast('Excel файл скачан!');
+    } catch (err) {
+        console.error("Export error:", err);
+        showToast("Ошибка при экспорте", "error");
+    }
+};
 
 // Запуск
 document.addEventListener('DOMContentLoaded', () => {
