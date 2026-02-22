@@ -50,19 +50,21 @@ BEGIN
         RAISE EXCEPTION 'Access denied. Only admins can create users.'; 
     END IF;
     
+    -- Генерируем ID заранее
+    new_user_id := gen_random_uuid();
+    
     INSERT INTO auth.users (
         id, aud, role, email, encrypted_password, email_confirmed_at, 
         raw_app_meta_data, raw_user_meta_data, created_at, updated_at
     )
     VALUES (
-        gen_random_uuid(), 'authenticated', 'authenticated', in_email, 
-        extensions.crypt(in_password, extensions.gen_salt('bf')), 
+        new_user_id, 'authenticated', 'authenticated', in_email, 
+        -- Важно: используем cost=10 для совместимости с Supabase GoTrue
+        extensions.crypt(in_password, extensions.gen_salt('bf', 10)), 
         now(), '{"provider":"email","providers":["email"]}', 
         jsonb_build_object('full_name', in_full_name), now(), now()
-    )
-    RETURNING id INTO new_user_id;
+    );
 
-    -- ИСПРАВЛЕНИЕ: provider_id теперь new_user_id::text
     INSERT INTO auth.identities (
         id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
     )

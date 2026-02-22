@@ -834,7 +834,10 @@ async function loadUsers() {
                             <td><span class="badge ${p.role === 'admin' ? 'badge-present' : 'badge-excused'}">${p.role}</span></td>
                             <td>${p.groups?.name || '—'}</td>
                             <td>
-                                <button onclick="editUserProfile('${p.id}')" class="btn btn-secondary py-1 px-3 text-xs">Изменить</button>
+                                <div class="flex gap-3 items-center">
+                                    <button onclick="editUserProfile('${p.id}')" class="btn btn-secondary py-1 px-3 text-xs">Изменить</button>
+                                    <button onclick="deleteUserAdmin('${p.id}', '${p.full_name}')" class="text-red-400 hover:text-red-300 text-xs font-bold uppercase tracking-wider">Удалить</button>
+                                </div>
                             </td>
                         </tr>
                     `).join('')}
