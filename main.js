@@ -913,18 +913,35 @@ function renderJournal() {
 }
 
 window.addStudentJournal = async () => {
+    // Получаем ID группы. Для старосты он берется из профиля, для админа - из селекта
     const groupId = state.profile?.group_id || state.selectedGroupId;
     const name = document.getElementById('journal-student-name').value;
-    if (!name || !groupId) return;
+
+    if (!groupId) {
+        showToast("Пожалуйста, сначала выберите конкретную группу в списке сверху!", 'error');
+        return;
+    }
+
+    if (!name) {
+        showToast("Введите ФИО студента", 'error');
+        return;
+    }
+
     state.loading = true;
     render();
+
     const { error } = await supabaseClient.from('students').insert([{ full_name: name, group_id: groupId }]);
-    if (error) showToast(error.message, 'error');
-    else {
-        showToast("Студент добавлен");
-        await loadData();
+
+    if (error) {
+        showToast(error.message, 'error');
+    } else {
+        showToast("Студент успешно добавлен в группу");
+        await loadData(); // Обновляем список студентов
         render();
     }
+
+    state.loading = false;
+    render();
 };
 
 function renderStatusSelector(studentId, currentStatus, isMobile = false) {
