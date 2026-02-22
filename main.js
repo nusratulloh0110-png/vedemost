@@ -333,7 +333,7 @@ function renderLogin() {
                     <p class="text-text-secondary text-sm">Панель управления</p>
                 </div>
                 <div class="space-y-4">
-                    <input type="email" id="email" placeholder="Email" class="input-premium">
+                    <input type="text" id="username" placeholder="Логин (например, admin)" class="input-premium">
                     <input type="password" id="password" placeholder="Пароль" class="input-premium">
                     <button id="login-btn" class="btn btn-primary w-full mt-2 flex items-center justify-center gap-3" ${state.loading ? 'disabled' : ''}>
                         ${state.loading ? `
@@ -675,8 +675,8 @@ function renderSettings() {
                     <input type="text" id="reg-name" placeholder="Иван Иванов" class="input-premium mt-1">
                 </div>
                 <div>
-                    <label class="text-[10px] font-bold text-text-muted uppercase">Email</label>
-                    <input type="email" id="reg-email" placeholder="email@example.com" class="input-premium mt-1">
+                    <label class="text-[10px] font-bold text-text-muted uppercase">Логин</label>
+                    <input type="text" id="reg-username" placeholder="Только латиница и цифры" class="input-premium mt-1">
                 </div>
                 <div>
                     <label class="text-[10px] font-bold text-text-muted uppercase">Пароль</label>
@@ -745,13 +745,19 @@ function renderSettings() {
 
 window.createNewUser = async () => {
     const full_name = document.getElementById('reg-name').value;
-    const email = document.getElementById('reg-email').value;
+    const username = document.getElementById('reg-username').value.trim().toLowerCase();
     const password = document.getElementById('reg-password').value;
     const role = document.getElementById('reg-role').value;
     const group_id = role === 'starosta' ? document.getElementById('reg-group').value : null;
 
-    if (!full_name || !email || !password) {
-        showToast("Заполните ФИО, Email и Пароль", 'error');
+    if (!full_name || !username || !password) {
+        showToast("Заполните ФИО, Логин и Пароль", 'error');
+        return;
+    }
+
+    // Запрещаем русские буквы и пробелы в логине
+    if (/[^a-z0-9_.-]/.test(username)) {
+        showToast("Логин должен содержать только английские буквы и цифры", "error");
         return;
     }
 
@@ -764,8 +770,11 @@ window.createNewUser = async () => {
     render();
 
     try {
+        // Формируем системный email для базы
+        const fakeEmail = `${username}@vedomost.local`;
+
         const { data, error } = await supabaseClient.rpc('create_user_admin', {
-            in_email: email,
+            in_email: fakeEmail,
             in_password: password,
             in_full_name: full_name,
             in_role: role,
@@ -775,16 +784,19 @@ window.createNewUser = async () => {
         if (error) throw error;
 
         showToast(`Аккаунт для ${full_name} создан!`);
-        // Clear fields
         document.getElementById('reg-name').value = '';
-        document.getElementById('reg-email').value = '';
+        document.getElementById('reg-username').value = '';
         document.getElementById('reg-password').value = '';
         document.getElementById('reg-group').value = '';
 
         await loadUsers();
     } catch (err) {
         console.error("Create user error:", err);
-        showToast("Ошибка: " + err.message, 'error');
+        if (err.code === '23505' || (err.message && err.message.includes('already exists'))) {
+            showToast("Пользователь с таким логином уже существует!", 'error');
+        } else {
+            showToast("Ошибка: " + err.message, 'error');
+        }
     } finally {
         state.loading = false;
         render();
@@ -972,21 +984,35 @@ function renderStatusSelector(studentId, currentStatus, isMobile = false) {
 // Events
 function attachLoginEvents() {
     document.getElementById('login-btn')?.addEventListener('click', () => {
-        const email = document.getElementById('email').value;
+        const username = document.getElementById('username').value.trim();
         const password = document.getElementById('password').value;
-        login(email, password);
+
+        if (!username || !password) {
+            showToast("Введите логин и пароль", "error");
+            return;
+        }
+
+        // Если в логине нет '@', значит это короткий логин, делаем из него фейковый email
+        let loginString = username;
+        if (!loginString.includes('@')) {
+            loginString = `${username}@vedomost.local`;
+        }
+
+        login(loginString, password);
     });
 }
 
 function attachAppEvents() {
     document.getElementById('logout-btn')?.addEventListener('click', logout);
-    document.getElementById('date-picker')?.addEventListener('change', (e) => {
+    document.getElementById('date-picker')?.addEventListener('change', async (e) => {
         state.currentDate = e.target.value;
-        loadData();
+        await loadData();
+        render(); // <-- Вот это вернет Журнал на экран
     });
-    document.getElementById('group-select')?.addEventListener('change', (e) => {
+    document.getElementById('group-select')?.addEventListener('change', async (e) => {
         state.selectedGroupId = e.target.value;
-        loadData();
+        await loadData();
+        render(); // <-- Вот это вернет Журнал на экран
     });
 }
 
