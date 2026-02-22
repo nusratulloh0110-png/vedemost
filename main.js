@@ -1,9 +1,31 @@
-// Внимание: мы используем Supabase через CDN в index.html, поэтому import не нужен.
-
-const SUPABASE_URL = 'https://ubuurabdqquixkyfpvup.supabase.co'
-const SUPABASE_KEY = 'sb_publishable_kX3znaYNvRT6A9up1HukHQ_Dz1VenqI'
-
-let supabaseClient = null;
+const apiClient = {
+    async request(path, options = {}) {
+        const token = localStorage.getItem('token');
+        const defaultHeaders = {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        };
+        const response = await fetch(path, {
+            ...options,
+            headers: { ...defaultHeaders, ...options.headers }
+        });
+        if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+                localStorage.removeItem('token');
+                state.user = null;
+                render();
+            }
+            const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+            throw new Error(error.error || 'Request failed');
+        }
+        if (response.status === 204) return null;
+        return response.json();
+    },
+    get(path) { return this.request(path); },
+    post(path, body) { return this.request(path, { method: 'POST', body: JSON.stringify(body) }); },
+    patch(path, body) { return this.request(path, { method: 'PATCH', body: JSON.stringify(body) }); },
+    delete(path) { return this.request(path, { method: 'DELETE' }); }
+};
 
 // Состояние
 let state = {
@@ -18,8 +40,8 @@ let state = {
     loading: false,
     loadingStep: '',
     error: null,
-    allStudents: [], // Для админ-панели управления студентами
-    allProfiles: [] // Для управления пользователями (админ)
+    allStudents: [],
+    allProfiles: []
 };
 
 window.showToast = (message, type = 'success') => {
@@ -72,106 +94,40 @@ window.showConfirm = (message, onConfirm) => {
     }
 };
 
-// Функция-обертка для предотвращения бесконечного ожидания ответа от сервера
-function withTimeout(promise, timeoutMs = 10000, stepName = 'Запрос') {
-    return Promise.race([
-        promise,
-        new Promise((_, reject) => setTimeout(() => reject(new Error(`Превышено время ожидания (${stepName}). Проверьте соединение или API ключи.`)), timeoutMs))
-    ]);
-}
-
 async function init() {
     try {
         console.log("Vedomost PRO: Запуск инициализации...");
         state.loadingStep = 'Старт системы...';
         state.error = null;
 
-        if (typeof supabase === 'undefined') {
-            throw new Error("Supabase не загружен. Проверьте интернет или ссылку в HTML.");
-        }
-
-        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        // Получаем текущую сессию
-        state.loadingStep = 'Проверка сессии...';
-        const { data: { session } } = await withTimeout(supabaseClient.auth.getSession(), 10000, 'Вход в систему');
-
-        if (session) {
-            state.user = session.user;
+        const token = localStorage.getItem('token');
+        if (token) {
             await loadProfile();
         } else {
-            console.log("Сессия не найдена, показываем экран входа.");
+            console.log("Токен не найден, показываем экран входа.");
         }
     } catch (err) {
         console.error("Критическая ошибка при запуске:", err);
-        state.error = "Не удалось подключиться к серверу. " + err.message;
-        state.user = null; // Показываем экран входа как запасной вариант
+        state.error = "Не удалось подключиться к серверу: " + err.message;
+        state.user = null;
     } finally {
         state.loading = false;
         render();
     }
 }
 
-// Вспомогательная функция для сброса загрузки по тайм-ауту
-let loadingTimeout = null;
-function startLoadingTimeout() {
-    if (loadingTimeout) clearTimeout(loadingTimeout);
-    loadingTimeout = setTimeout(() => {
-        if (state.loading) {
-            console.warn("Loading timeout reached. Resetting loading state.");
-            state.loading = false;
-            state.error = "Время ожидания ответа от сервера истекло. Проверьте VPN или ключ API.";
-            render();
-        }
-    }, 15000); // 15 секунд
-}
-
 async function loadProfile() {
-    if (!state.user) return;
-
     state.loading = true;
     state.loadingStep = 'Загрузка профиля...';
-    state.error = null;
     render();
-    startLoadingTimeout();
 
     try {
-        console.log("Fetching profile for:", state.user.id);
-        const { data: profile, error } = await withTimeout(
-            supabaseClient.from('profiles').select('*').eq('id', state.user.id).single(),
-            10000,
-            'Загрузка профиля'
-        );
+        const profile = await apiClient.get('/api/profile');
+        state.profile = profile;
+        state.user = { id: profile.id }; // Compatibility with old logic
 
-        if (error) {
-            console.error("Profile Error:", error);
-            if (error.code === 'PGRST116') {
-                // Если профиля нет, создадим минимальный, чтобы не вешать приложение
-                console.log("Profile missing, creating default...");
-                const { data: newProfile, error: createError } = await supabaseClient
-                    .from('profiles')
-                    .insert([{ id: state.user.id, full_name: state.user.email.split('@')[0], role: 'starosta' }])
-                    .select()
-                    .single();
-
-                if (createError) throw createError;
-                state.profile = newProfile;
-            } else {
-                throw error;
-            }
-        } else {
-            state.profile = profile;
-        }
-
-        // Загрузка групп (параллельно для скорости)
-        state.loadingStep = 'Загрузка групп...';
         if (state.profile?.role === 'admin' || state.profile?.role === 'tutor') {
-            const { data: groups, error: gError } = await withTimeout(
-                supabaseClient.from('groups').select('*'),
-                10000,
-                'Получение групп'
-            );
-            if (gError) console.error("Groups fetch failed:", gError);
+            const groups = await apiClient.get('/api/groups');
             state.groups = groups || [];
         } else {
             state.selectedGroupId = state.profile.group_id;
@@ -179,29 +135,28 @@ async function loadProfile() {
 
         await loadData();
     } catch (err) {
-        console.error("Критическая ошибка loadProfile:", err);
-        state.error = err.message || JSON.stringify(err);
+        console.error("Ошибка loadProfile:", err);
+        localStorage.removeItem('token');
+        state.user = null;
+        state.error = err.message;
     } finally {
         state.loading = false;
-        if (loadingTimeout) clearTimeout(loadingTimeout);
         render();
     }
 }
 
-
 async function loadData() {
-    console.log("Loading data for group:", state.selectedGroupId);
     state.loadingStep = 'Загрузка данных...';
     try {
         const isAdmin = state.profile?.role === 'admin' || state.profile?.role === 'tutor';
 
-        // Если админ — загружаем всех студентов для управления ими в табе "Группы"
         if (isAdmin) {
-            const { data: allS } = await supabaseClient.from('students').select('*').order('full_name');
-            state.allStudents = allS || [];
-
-            const { data: allP } = await supabaseClient.from('profiles').select('*').order('full_name');
-            state.allProfiles = allP || [];
+            const [students, profiles] = await Promise.all([
+                apiClient.get('/api/students'),
+                apiClient.get('/api/admin/users')
+            ]);
+            state.allStudents = students || [];
+            state.allProfiles = profiles || [];
         }
 
         if (!state.selectedGroupId && !isAdmin) {
@@ -210,41 +165,29 @@ async function loadData() {
             return;
         }
 
-        const studentQuery = state.selectedGroupId
-            ? supabaseClient.from('students').select('*').eq('group_id', state.selectedGroupId)
-            : supabaseClient.from('students').select('*').limit(100);
+        const query = state.selectedGroupId ? `?group_id=${state.selectedGroupId}` : '';
+        const [students, attendance] = await Promise.all([
+            apiClient.get(state.selectedGroupId ? `/api/students?group_id=${state.selectedGroupId}` : '/api/students'),
+            apiClient.get(`/api/attendance${query}&date=${state.currentDate}`)
+        ]);
 
-        const results = await withTimeout(
-            Promise.all([
-                studentQuery.order('full_name'),
-                supabaseClient.from('attendance').select('*').eq('date', state.currentDate)
-            ]),
-            15000,
-            'Загрузка данных журнала'
-        );
-
-        const [studentsRes, attendanceRes] = results;
-
-        if (studentsRes.error) console.error("Students load error:", studentsRes.error);
-        if (attendanceRes.error) console.error("Attendance load error:", attendanceRes.error);
-
-        state.students = studentsRes.data || [];
-        state.attendance = attendanceRes.data || [];
+        state.students = students || [];
+        state.attendance = attendance || [];
     } catch (err) {
         console.error("Ошибка в loadData:", err);
     }
 }
 
-
-async function login(email, password) {
+async function login(username, password) {
     if (state.loading) return;
     state.loading = true;
     render();
 
     try {
-        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        state.user = data.user;
+        const { token, profile } = await apiClient.post('/api/login', { username, password });
+        localStorage.setItem('token', token);
+        state.user = { id: profile.id };
+        state.profile = profile;
         await loadProfile();
         showToast('Вы успешно вошли!');
     } catch (err) {
@@ -256,12 +199,9 @@ async function login(email, password) {
 }
 
 window.logout = async () => {
-    state.loading = true;
-    render();
-    await supabaseClient.auth.signOut();
+    localStorage.removeItem('token');
     state.user = null;
     state.profile = null;
-    state.loading = false;
     render();
 }
 
@@ -604,14 +544,16 @@ window.createGroup = async () => {
     }
     state.loading = true;
     render();
-    const { error } = await supabaseClient.from('groups').insert([{ name }]);
-    if (error) showToast(error.message, 'error');
-    else {
+    try {
+        await apiClient.post('/api/groups', { name });
         showToast('Группа успешно создана!');
-        await loadProfile(); // Reloads groups and data
+        await loadProfile();
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        state.loading = false;
+        render();
     }
-    state.loading = false;
-    render();
 }
 
 window.enterGroup = (groupId) => {
@@ -633,35 +575,57 @@ window.addStudent = async (groupId) => {
     state.loading = true;
     render();
 
-    const { error } = await supabaseClient
-        .from('students')
-        .insert([{ full_name: fullName, group_id: groupId }]);
-
-    if (error) {
-        showToast(error.message, 'error');
-    } else {
+    try {
+        await apiClient.post('/api/students', { full_name: fullName, group_id: groupId });
         showToast("Студент успешно добавлен");
         input.value = '';
         await loadData();
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        state.loading = false;
         render();
     }
-    state.loading = false;
+};
+
+window.addStudentGlobal = async () => {
+    const fullName = document.getElementById('new-student-name').value;
+    const groupId = document.getElementById('new-student-group').value;
+
+    if (!fullName || !groupId) {
+        showToast("Заполните ФИО и выберите группу", 'error');
+        return;
+    }
+
+    state.loading = true;
     render();
+
+    try {
+        await apiClient.post('/api/students', { full_name: fullName, group_id: groupId });
+        showToast("Студент успешно добавлен");
+        document.getElementById('new-student-name').value = '';
+        await loadData();
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        state.loading = false;
+        render();
+    }
 };
 
 window.removeStudent = async (id) => {
     state.loading = true;
     render();
-    const { error } = await supabaseClient.from('students').delete().eq('id', id);
-    if (error) {
-        showToast(error.message, 'error');
-    } else {
+    try {
+        await apiClient.delete('/api/students/' + id);
         showToast("Студент удален");
         await loadData();
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        state.loading = false;
         render();
     }
-    state.loading = false;
-    render();
 };
 
 
@@ -755,7 +719,6 @@ window.createNewUser = async () => {
         return;
     }
 
-    // Запрещаем русские буквы и пробелы в логине
     if (/[^a-z0-9_.-]/.test(username)) {
         showToast("Логин должен содержать только английские буквы и цифры", "error");
         return;
@@ -770,33 +733,17 @@ window.createNewUser = async () => {
     render();
 
     try {
-        // Формируем системный email для базы
-        const fakeEmail = `${username}@vedomost.local`;
-
-        const { data, error } = await supabaseClient.rpc('create_user_admin', {
-            in_email: fakeEmail,
-            in_password: password,
-            in_full_name: full_name,
-            in_role: role,
-            in_group_id: group_id
-        });
-
-        if (error) throw error;
-
+        await apiClient.post('/api/admin/users', { username, password, full_name, role, group_id });
         showToast(`Аккаунт для ${full_name} создан!`);
         document.getElementById('reg-name').value = '';
         document.getElementById('reg-username').value = '';
         document.getElementById('reg-password').value = '';
-        document.getElementById('reg-group').value = '';
+        if (document.getElementById('reg-group')) document.getElementById('reg-group').value = '';
 
         await loadUsers();
     } catch (err) {
         console.error("Create user error:", err);
-        if (err.code === '23505' || (err.message && err.message.includes('already exists'))) {
-            showToast("Пользователь с таким логином уже существует!", 'error');
-        } else {
-            showToast("Ошибка: " + err.message, 'error');
-        }
+        showToast("Ошибка: " + err.message, 'error');
     } finally {
         state.loading = false;
         render();
@@ -804,47 +751,47 @@ window.createNewUser = async () => {
 };
 
 async function loadUsers() {
-    const { data: profiles, error } = await supabaseClient.from('profiles').select('*, groups(name)');
-    const container = document.getElementById('users-list-container');
-    if (!container) return;
+    try {
+        const profiles = await apiClient.get('/api/admin/users');
+        const container = document.getElementById('users-list-container');
+        if (!container) return;
 
-    if (error) {
-        container.innerHTML = `<div class="text-red-400">Ошибка: ${error.message}</div>`;
-        return;
-    }
-
-    container.innerHTML = `
-        <div class="overflow-x-auto">
-            <table class="premium-table">
-                <thead>
-                    <tr>
-                        <th>Пользователь</th>
-                        <th>Роль</th>
-                        <th>Группа</th>
-                        <th>Действия</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${profiles.map(p => `
+        container.innerHTML = `
+            <div class="overflow-x-auto">
+                <table class="premium-table">
+                    <thead>
                         <tr>
-                            <td>
-                                <div class="font-bold">${p.full_name || 'Без имени'}</div>
-                                <div class="text-[10px] text-text-muted">${p.id}</div>
-                            </td>
-                            <td><span class="badge ${p.role === 'admin' ? 'badge-present' : 'badge-excused'}">${p.role}</span></td>
-                            <td>${p.groups?.name || '—'}</td>
-                            <td>
-                                <div class="flex gap-3 items-center">
-                                    <button onclick="editUserProfile('${p.id}')" class="btn btn-secondary py-1 px-3 text-xs">Изменить</button>
-                                    <button onclick="deleteUserAdmin('${p.id}', '${p.full_name}')" class="text-red-400 hover:text-red-300 text-xs font-bold uppercase tracking-wider">Удалить</button>
-                                </div>
-                            </td>
+                            <th>Пользователь</th>
+                            <th>Роль</th>
+                            <th>Группа</th>
+                            <th>Действия</th>
                         </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        </div>
-    `;
+                    </thead>
+                    <tbody>
+                        ${profiles.map(p => `
+                            <tr>
+                                <td>
+                                    <div class="font-bold">${p.full_name || 'Без имени'}</div>
+                                    <div class="text-[10px] text-text-muted">${p.id}</div>
+                                </td>
+                                <td><span class="badge ${p.role === 'admin' ? 'badge-present' : 'badge-excused'}">${p.role}</span></td>
+                                <td>${p.group_name || '—'}</td>
+                                <td>
+                                    <div class="flex gap-3 items-center">
+                                        <button onclick="editUserProfile('${p.id}')" class="btn btn-secondary py-1 px-3 text-xs">Изменить</button>
+                                        <button onclick="deleteUserAdmin('${p.id}', '${p.full_name}')" class="text-red-400 hover:text-red-300 text-xs font-bold uppercase tracking-wider">Удалить</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } catch (err) {
+        const container = document.getElementById('users-list-container');
+        if (container) container.innerHTML = `<div class="text-red-400">Ошибка: ${err.message}</div>`;
+    }
 }
 
 
@@ -945,18 +892,16 @@ window.addStudentJournal = async () => {
     state.loading = true;
     render();
 
-    const { error } = await supabaseClient.from('students').insert([{ full_name: name, group_id: groupId }]);
-
-    if (error) {
-        showToast(error.message, 'error');
-    } else {
+    try {
+        await apiClient.post('/api/students', { full_name: name, group_id: groupId });
         showToast("Студент успешно добавлен в группу");
         await loadData(); // Обновляем список студентов
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        state.loading = false;
         render();
     }
-
-    state.loading = false;
-    render();
 };
 
 function renderStatusSelector(studentId, currentStatus, isMobile = false) {
@@ -1033,22 +978,9 @@ window.updateStatus = async (studentId, status) => {
     state.updatingStatus = studentId;
     render();
 
-    const existing = state.attendance.find(a => a.student_id === studentId);
-    let error;
-
     try {
-        if (existing) {
-            ({ error } = await supabaseClient
-                .from('attendance')
-                .update({ status })
-                .eq('id', existing.id));
-        } else {
-            ({ error } = await supabaseClient
-                .from('attendance')
-                .insert([{ student_id: studentId, date: state.currentDate, status }]));
-        }
-
-        if (error) throw error;
+        const groupId = state.profile?.group_id || state.selectedGroupId;
+        await apiClient.post('/api/attendance', { student_id: studentId, group_id: groupId, status, date: state.currentDate });
         await loadData();
     } catch (err) {
         showToast('Ошибка: ' + err.message, 'error');
@@ -1096,24 +1028,13 @@ window.saveOptions = async (studentId) => {
     const status = document.getElementById('modal-status').value;
     const comment = document.getElementById('modal-comment').value;
 
-    const existing = state.attendance.find(a => a.student_id === studentId);
-    let error;
-
-    if (existing) {
-        ({ error } = await supabaseClient
-            .from('attendance')
-            .update({ status, comment })
-            .eq('id', existing.id));
-    } else {
-        ({ error } = await supabaseClient
-            .from('attendance')
-            .insert([{ student_id: studentId, date: state.currentDate, status, comment }]));
-    }
-
-    if (error) showToast('Ошибка: ' + error.message, 'error');
-    else {
+    try {
+        const groupId = state.profile?.group_id || state.selectedGroupId;
+        await apiClient.post('/api/attendance', { student_id: studentId, group_id: groupId, status, date: state.currentDate, comment });
         closeModal();
-        loadData();
+        await loadData();
+    } catch (err) {
+        showToast('Ошибка: ' + err.message, 'error');
     }
 };
 
@@ -1124,7 +1045,8 @@ window.closeModal = () => {
 
 window.renderDashboard = () => { }; // Placeholder for now
 window.editUserProfile = async (userId) => {
-    const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
+    const profiles = await apiClient.get('/api/admin/users');
+    const profile = profiles.find(p => p.id === userId);
     if (!profile) return;
 
     const modalHtml = `
@@ -1182,43 +1104,21 @@ window.saveUserProfile = async (userId) => {
     const role = document.getElementById('edit-role').value;
     const group_id = document.getElementById('edit-group-id').value || null;
 
-    let newUsername = document.getElementById('edit-username').value.trim().toLowerCase();
-    const newPassword = document.getElementById('edit-password').value;
+    let username = document.getElementById('edit-username').value.trim().toLowerCase();
+    const password = document.getElementById('edit-password').value;
 
     state.loading = true;
     render();
 
     try {
-        // 1. Обновляем публичные данные профиля
-        const { error: profileError } = await supabaseClient
-            .from('profiles')
-            .update({ full_name, role, group_id })
-            .eq('id', userId);
+        if (username && /[^a-z0-9_.-]/.test(username)) throw new Error("Логин должен содержать только английские буквы и цифры");
 
-        if (profileError) throw profileError;
-
-        // 2. Если ввели новый логин или пароль, обновляем их через нашу SQL-функцию
-        if (newUsername || newPassword) {
-            let fakeEmail = null;
-            if (newUsername) {
-                // Убираем запрещенные символы
-                if (/[^a-z0-9_.-]/.test(newUsername)) throw new Error("Логин должен содержать только английские буквы и цифры");
-                fakeEmail = `${newUsername}@vedomost.local`;
-            }
-
-            const { error: credsError } = await supabaseClient.rpc('update_user_credentials_admin', {
-                target_user_id: userId,
-                new_email: fakeEmail,
-                new_password: newPassword || null
-            });
-
-            if (credsError) throw credsError;
-        }
+        await apiClient.patch('/api/admin/users/' + userId, { full_name, role, group_id, username, password });
 
         showToast("Пользователь успешно обновлен!");
         closeModal();
         await loadData();
-        if (state.activeTab === 'settings') loadUsers(); // Перезагружаем список в табе Доступы
+        if (state.activeTab === 'settings') await loadUsers();
 
     } catch (err) {
         showToast(err.message, 'error');
@@ -1232,29 +1132,30 @@ window.deleteUserAdmin = (userId, userName) => {
     showConfirm(`Вы уверены, что хотите НАВСЕГДА удалить пользователя ${userName}? Это действие нельзя отменить.`, async () => {
         state.loading = true;
         render();
-        const { error } = await supabaseClient.rpc('delete_user_admin', { target_user_id: userId });
-
-        state.loading = false;
-        if (error) {
-            showToast(error.message, 'error');
-        } else {
+        try {
+            await apiClient.delete('/api/admin/users/' + userId);
             showToast("Пользователь удален!");
             closeModal();
             await loadData();
             if (state.activeTab === 'settings') loadUsers();
+        } catch (err) {
+            showToast(err.message, 'error');
+        } finally {
+            state.loading = false;
+            render();
         }
-        render();
     });
 };
 
 window.deleteGroup = (groupId) => {
     showConfirm(`Удалить группу и всех студентов в ней?`, async () => {
-        const { error } = await supabaseClient.from('groups').delete().eq('id', groupId);
-        if (error) showToast(error.message, 'error');
-        else {
+        try {
+            await apiClient.delete('/api/groups/' + groupId);
             showToast("Группа удалена");
             await loadData();
-            render();
+            await loadProfile();
+        } catch (err) {
+            showToast(err.message, 'error');
         }
     });
 };

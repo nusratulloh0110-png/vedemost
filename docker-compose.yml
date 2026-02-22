@@ -4,4 +4,6 @@ services:
     image: vedomost-pro:latest
     ports:
       - "80:80"
+    volumes:
+      - ./database.sqlite:/app/database.sqlite
     restart: always

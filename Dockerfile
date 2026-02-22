@@ -1,13 +1,18 @@
-# Используем легкий образ Nginx
-FROM nginx:alpine
+# Используем современный образ Node.js
+FROM node:18-alpine
 
-# Копируем файлы проекта в стандартную папку Nginx
-COPY . /usr/share/nginx/html
+# Создаем рабочую директорию
+WORKDIR /app
 
-# Копируем конфигурацию Nginx
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Копируем package.json и устанавливаем зависимости
+COPY package*.json ./
+RUN npm install --production
+
+# Копируем все файлы проекта
+COPY . .
 
 # Открываем порт 80
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+# Запускаем сервер
+CMD ["node", "server.js"]

@@ -57,7 +57,8 @@ BEGIN
     )
     VALUES (
         new_user_id, 'authenticated', 'authenticated', in_email, 
-        extensions.crypt(in_password, extensions.gen_salt('bf', 10)), 
+        -- Убрали жесткую привязку к cost=10, пусть pgcrypto подберет совместимый с твоей БД
+        extensions.crypt(in_password, extensions.gen_salt('bf')), 
         now(), '{"provider":"email","providers":["email"]}', 
         jsonb_build_object('full_name', in_full_name), now(), now()
     );
@@ -66,11 +67,13 @@ BEGIN
         id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
     )
     VALUES (
-        gen_random_uuid(), new_user_id, jsonb_build_object('sub', new_user_id, 'email', in_email), 
-        'email', new_user_id::text, now(), now(), now()
+        gen_random_uuid(), new_user_id, 
+        -- Добавили email_verified: true, чтобы GoTrue не блокировал вход
+        jsonb_build_object('sub', new_user_id, 'email', in_email, 'email_verified', true), 
+        'email', in_email, -- ВАЖНО: вернули in_email как provider_id
+        now(), now(), now()
     );
 
-    -- ИСПРАВЛЕНИЕ ОШИБКИ PROFILES_PKEY:
     INSERT INTO public.profiles (id, full_name, role, group_id) 
     VALUES (new_user_id, in_full_name, in_role, in_group_id)
     ON CONFLICT (id) DO UPDATE SET 
