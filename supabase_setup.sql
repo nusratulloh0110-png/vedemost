@@ -34,9 +34,7 @@ DROP POLICY IF EXISTS "Admins can manage attendance" ON attendance;
 CREATE POLICY "Admins can manage attendance" ON attendance FOR ALL USING (get_my_role() = 'admin') WITH CHECK (get_my_role() = 'admin');
 
 
--- 4. Исправляем RPC для создания пользователей (убираем устаревшие поля)
-CREATE EXTENSION IF NOT EXISTS pgcrypto SCHEMA extensions;
-
+-- 1. Обновляем создание пользователя (чиним связку identity для корректного входа)
 CREATE OR REPLACE FUNCTION create_user_admin(
     in_email TEXT, 
     in_password TEXT, 
@@ -52,47 +50,67 @@ BEGIN
         RAISE EXCEPTION 'Access denied. Only admins can create users.'; 
     END IF;
     
-    -- Вставляем ТОЛЬКО существующие в новых версиях Supabase колонки
     INSERT INTO auth.users (
-        id, 
-        aud, 
-        role, 
-        email, 
-        encrypted_password, 
-        email_confirmed_at, 
-        raw_app_meta_data, 
-        raw_user_meta_data, 
-        created_at, 
-        updated_at
+        id, aud, role, email, encrypted_password, email_confirmed_at, 
+        raw_app_meta_data, raw_user_meta_data, created_at, updated_at
     )
     VALUES (
-        gen_random_uuid(), 
-        'authenticated', 
-        'authenticated', 
-        in_email, 
+        gen_random_uuid(), 'authenticated', 'authenticated', in_email, 
         extensions.crypt(in_password, extensions.gen_salt('bf')), 
-        now(), 
-        '{"provider":"email","providers":["email"]}', 
-        jsonb_build_object('full_name', in_full_name), 
-        now(), 
-        now()
+        now(), '{"provider":"email","providers":["email"]}', 
+        jsonb_build_object('full_name', in_full_name), now(), now()
     )
     RETURNING id INTO new_user_id;
 
+    -- ИСПРАВЛЕНИЕ: provider_id теперь new_user_id::text
     INSERT INTO auth.identities (
         id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
     )
     VALUES (
-        gen_random_uuid(), new_user_id, jsonb_build_object('sub', new_user_id, 'email', in_email), 'email', in_email, now(), now(), now()
+        gen_random_uuid(), new_user_id, jsonb_build_object('sub', new_user_id, 'email', in_email), 
+        'email', new_user_id::text, now(), now(), now()
     );
 
     INSERT INTO public.profiles (id, full_name, role, group_id) 
-    VALUES (new_user_id, in_full_name, in_role, in_group_id) 
-    ON CONFLICT (id) DO UPDATE SET 
-        role = EXCLUDED.role, 
-        group_id = EXCLUDED.group_id,
-        full_name = EXCLUDED.full_name;
+    VALUES (new_user_id, in_full_name, in_role, in_group_id);
     
     RETURN new_user_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, auth, extensions;
+
+-- 2. Функция для обновления логина и пароля
+CREATE OR REPLACE FUNCTION update_user_credentials_admin(
+    target_user_id UUID,
+    new_email TEXT DEFAULT NULL,
+    new_password TEXT DEFAULT NULL
+)
+RETURNS void AS $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin') THEN 
+        RAISE EXCEPTION 'Access denied.'; 
+    END IF;
+
+    IF new_email IS NOT NULL AND new_email != '' THEN
+        UPDATE auth.users SET email = new_email WHERE id = target_user_id;
+        UPDATE auth.identities SET identity_data = jsonb_set(identity_data, '{email}', to_jsonb(new_email)) WHERE user_id = target_user_id AND provider = 'email';
+    END IF;
+
+    IF new_password IS NOT NULL AND new_password != '' THEN
+        UPDATE auth.users SET encrypted_password = extensions.crypt(new_password, extensions.gen_salt('bf')) WHERE id = target_user_id;
+    END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, auth, extensions;
+
+-- 3. Функция для полного удаления пользователя
+CREATE OR REPLACE FUNCTION delete_user_admin(target_user_id UUID)
+RETURNS void AS $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin') THEN 
+        RAISE EXCEPTION 'Access denied.'; 
+    END IF;
+    
+    -- Сначала удаляем профиль, потом сам аккаунт из auth
+    DELETE FROM public.profiles WHERE id = target_user_id;
+    DELETE FROM auth.users WHERE id = target_user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, auth;

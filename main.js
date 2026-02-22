@@ -984,7 +984,7 @@ function renderStatusSelector(studentId, currentStatus, isMobile = false) {
 // Events
 function attachLoginEvents() {
     document.getElementById('login-btn')?.addEventListener('click', () => {
-        const username = document.getElementById('username').value.trim();
+        const username = document.getElementById('username').value.trim().toLowerCase();
         const password = document.getElementById('password').value;
 
         if (!username || !password) {
@@ -1120,26 +1120,41 @@ window.editUserProfile = async (userId) => {
     const modalHtml = `
         <div class="modal-overlay animate-fade-in" id="user-modal">
             <div class="glass glass-card min-w-[400px]">
-                <h3 class="text-xl font-bold mb-4">Настройки пользователя</h3>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold">Настройки пользователя</h3>
+                    <button onclick="deleteUserAdmin('${userId}', '${profile.full_name}')" class="text-xs bg-red-500/10 text-red-500 px-2 py-1 rounded hover:bg-red-500/20">Удалить аккаунт</button>
+                </div>
                 <div class="space-y-4">
                     <div>
                         <label class="text-xs font-bold text-text-muted uppercase">Полное имя</label>
                         <input id="edit-full-name" type="text" value="${profile.full_name || ''}" class="input-premium mt-1">
                     </div>
-                    <div>
-                        <label class="text-xs font-bold text-text-muted uppercase">Роль</label>
-                        <select id="edit-role" class="input-premium mt-1">
-                            <option value="admin" ${profile.role === 'admin' ? 'selected' : ''}>Админ</option>
-                            <option value="tutor" ${profile.role === 'tutor' ? 'selected' : ''}>Тютор</option>
-                            <option value="starosta" ${profile.role === 'starosta' ? 'selected' : ''}>Староста</option>
-                        </select>
+                    <div class="flex gap-2">
+                        <div class="flex-1">
+                            <label class="text-xs font-bold text-text-muted uppercase">Новый Логин</label>
+                            <input id="edit-username" type="text" placeholder="Оставьте пустым, если не меняете" class="input-premium mt-1 text-sm">
+                        </div>
+                        <div class="flex-1">
+                            <label class="text-xs font-bold text-text-muted uppercase">Новый Пароль</label>
+                            <input id="edit-password" type="text" placeholder="Оставьте пустым..." class="input-premium mt-1 text-sm">
+                        </div>
                     </div>
-                    <div>
-                        <label class="text-xs font-bold text-text-muted uppercase">Группа (для старосты)</label>
-                        <select id="edit-group-id" class="input-premium mt-1">
-                            <option value="">— Нет группы —</option>
-                            ${state.groups.map(g => `<option value="${g.id}" ${profile.group_id === g.id ? 'selected' : ''}>${g.name}</option>`).join('')}
-                        </select>
+                    <div class="flex gap-2">
+                        <div class="flex-1">
+                            <label class="text-xs font-bold text-text-muted uppercase">Роль</label>
+                            <select id="edit-role" class="input-premium mt-1">
+                                <option value="admin" ${profile.role === 'admin' ? 'selected' : ''}>Админ</option>
+                                <option value="tutor" ${profile.role === 'tutor' ? 'selected' : ''}>Тютор</option>
+                                <option value="starosta" ${profile.role === 'starosta' ? 'selected' : ''}>Староста</option>
+                            </select>
+                        </div>
+                        <div class="flex-1">
+                            <label class="text-xs font-bold text-text-muted uppercase">Группа</label>
+                            <select id="edit-group-id" class="input-premium mt-1">
+                                <option value="">— Нет группы —</option>
+                                ${state.groups.map(g => `<option value="${g.id}" ${profile.group_id === g.id ? 'selected' : ''}>${g.name}</option>`).join('')}
+                            </select>
+                        </div>
                     </div>
                     <div class="flex gap-2 pt-4">
                         <button onclick="saveUserProfile('${userId}')" class="btn btn-primary flex-1">Сохранить</button>
@@ -1157,16 +1172,69 @@ window.saveUserProfile = async (userId) => {
     const role = document.getElementById('edit-role').value;
     const group_id = document.getElementById('edit-group-id').value || null;
 
-    const { error } = await supabaseClient
-        .from('profiles')
-        .update({ full_name, role, group_id })
-        .eq('id', userId);
+    let newUsername = document.getElementById('edit-username').value.trim().toLowerCase();
+    const newPassword = document.getElementById('edit-password').value;
 
-    if (error) showToast(error.message, 'error');
-    else {
+    state.loading = true;
+    render();
+
+    try {
+        // 1. Обновляем публичные данные профиля
+        const { error: profileError } = await supabaseClient
+            .from('profiles')
+            .update({ full_name, role, group_id })
+            .eq('id', userId);
+
+        if (profileError) throw profileError;
+
+        // 2. Если ввели новый логин или пароль, обновляем их через нашу SQL-функцию
+        if (newUsername || newPassword) {
+            let fakeEmail = null;
+            if (newUsername) {
+                // Убираем запрещенные символы
+                if (/[^a-z0-9_.-]/.test(newUsername)) throw new Error("Логин должен содержать только английские буквы и цифры");
+                fakeEmail = `${newUsername}@vedomost.local`;
+            }
+
+            const { error: credsError } = await supabaseClient.rpc('update_user_credentials_admin', {
+                target_user_id: userId,
+                new_email: fakeEmail,
+                new_password: newPassword || null
+            });
+
+            if (credsError) throw credsError;
+        }
+
+        showToast("Пользователь успешно обновлен!");
         closeModal();
-        loadData();
+        await loadData();
+        if (state.activeTab === 'settings') loadUsers(); // Перезагружаем список в табе Доступы
+
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        state.loading = false;
+        render();
     }
+};
+
+window.deleteUserAdmin = (userId, userName) => {
+    showConfirm(`Вы уверены, что хотите НАВСЕГДА удалить пользователя ${userName}? Это действие нельзя отменить.`, async () => {
+        state.loading = true;
+        render();
+        const { error } = await supabaseClient.rpc('delete_user_admin', { target_user_id: userId });
+
+        state.loading = false;
+        if (error) {
+            showToast(error.message, 'error');
+        } else {
+            showToast("Пользователь удален!");
+            closeModal();
+            await loadData();
+            if (state.activeTab === 'settings') loadUsers();
+        }
+        render();
+    });
 };
 
 window.deleteGroup = (groupId) => {
