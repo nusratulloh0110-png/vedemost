@@ -375,8 +375,11 @@ function renderSidebar() {
         <aside class="sidebar glass">
             <div class="brand mb-4">
                 <h2 class="brand-text text-xl font-bold">Vedomost <span class="text-emerald-500">PRO</span></h2>
-                <div class="text-[10px] text-emerald-500 font-bold uppercase tracking-widest mt-1">
-                    ${roleMap[state.profile?.role] || 'Пользователь'}
+                <div class="flex items-center gap-2 mt-1">
+                    <div class="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">
+                        ${roleMap[state.profile?.role] || 'Пользователь'}
+                    </div>
+                    <span class="text-[8px] bg-emerald-500/20 text-emerald-500 px-1.5 py-0.5 rounded-full font-black border border-emerald-500/30">v2.0</span>
                 </div>
             </div>
             
@@ -913,21 +916,25 @@ window.addStudentJournal = async () => {
     }
 };
 
-function renderStatusSelector(studentId, currentStatus) {
+function renderStatusSelector(studentId, currentStatus, isMobile = false) {
     const statuses = [
-        { id: 'present', label: 'П' },
-        { id: 'absent', label: 'Н' },
-        { id: 'excused', label: 'У' }
+        { id: 'present', label: 'П', full: 'Был' },
+        { id: 'absent', label: 'Н', full: 'Нет' },
+        { id: 'excused', label: 'У', full: 'Уваж.' }
     ];
 
+    const isUpdating = state.updatingStatus === studentId;
+
     return `
-        <div class="flex gap-2">
+        <div class="flex gap-2 ${isMobile ? 'status-grid w-full' : ''}">
             ${statuses.map(s => `
                 <button 
+                    id="status-${studentId}-${s.id}"
                     onclick="updateStatus('${studentId}', '${s.id}')"
-                    class="w-10 h-10 rounded-xl font-bold transition-all border ${currentStatus === s.id ? 'bg-accent-primary text-white border-accent-primary' : 'bg-bg-primary text-text-muted border-border-color hover:border-text-muted'}"
+                    class="status-btn status-btn-${s.id} ${currentStatus === s.id ? 'active' : ''} ${isUpdating ? 'btn-loading' : ''} ${isMobile ? 'w-full' : 'w-10'}"
                 >
-                    ${s.label}
+                    <span class="font-black">${s.label}</span>
+                    ${isMobile ? `<span>${s.full}</span>` : ''}
                 </button>
             `).join('')}
         </div>
@@ -957,22 +964,34 @@ function attachAppEvents() {
 
 // Global functions for inline events
 window.updateStatus = async (studentId, status) => {
+    if (state.updatingStatus) return; // Prevent multiple clicks
+
+    state.updatingStatus = studentId;
+    render();
+
     const existing = state.attendance.find(a => a.student_id === studentId);
     let error;
 
-    if (existing) {
-        ({ error } = await supabaseClient
-            .from('attendance')
-            .update({ status })
-            .eq('id', existing.id));
-    } else {
-        ({ error } = await supabaseClient
-            .from('attendance')
-            .insert([{ student_id: studentId, date: state.currentDate, status }]));
-    }
+    try {
+        if (existing) {
+            ({ error } = await supabaseClient
+                .from('attendance')
+                .update({ status })
+                .eq('id', existing.id));
+        } else {
+            ({ error } = await supabaseClient
+                .from('attendance')
+                .insert([{ student_id: studentId, date: state.currentDate, status }]));
+        }
 
-    if (error) showToast('Ошибка обновления: ' + error.message, 'error');
-    else loadData();
+        if (error) throw error;
+        await loadData();
+    } catch (err) {
+        showToast('Ошибка: ' + err.message, 'error');
+    } finally {
+        state.updatingStatus = null;
+        render();
+    }
 };
 
 window.openOptions = (studentId) => {
