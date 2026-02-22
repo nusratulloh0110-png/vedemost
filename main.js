@@ -244,7 +244,7 @@ function render() {
                     <div class="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-6"></div>
                     <p class="text-emerald-500 text-xl font-bold mb-2 animate-pulse">${state.loadingStep || 'Загрузка данных...'}</p>
                     <p class="text-text-secondary text-sm mb-8 max-w-xs">
-                        Это может занять время, если интернет медленный или ключи Supabase неверны.
+                        Это может занять время при первом запуске или медленном соединении с сервером.
                     </p>
                     <div class="flex flex-col gap-3 w-full max-w-xs">
                         <button onclick="state.loading=false; render();" class="btn btn-secondary w-full uppercase tracking-widest text-xs py-3">
@@ -947,13 +947,7 @@ function attachLoginEvents() {
             return;
         }
 
-        // Если в логине нет '@', значит это короткий логин, делаем из него фейковый email
-        let loginString = username;
-        if (!loginString.includes('@')) {
-            loginString = `${username}@vedomost.local`;
-        }
-
-        login(loginString, password);
+        login(username, password);
     });
 }
 

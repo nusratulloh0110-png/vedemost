@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const path = require('path');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 80;
@@ -55,11 +56,17 @@ db.exec(`
 
 // Initial Admin User (Create if not exists)
 const adminId = '00000000-0000-0000-0000-000000000000';
-const existingAdmin = db.prepare('SELECT * FROM users WHERE username = ?').get('admin');
+let existingAdmin = db.prepare('SELECT * FROM users WHERE username = ?').get('admin');
+
+// If 'admin' doesn't exist, also check by ID to be sure
+if (!existingAdmin) {
+    existingAdmin = db.prepare('SELECT * FROM users WHERE id = ?').get(adminId);
+}
+
 if (!existingAdmin) {
     const hash = bcrypt.hashSync('admin123', 10);
-    db.prepare('INSERT INTO profiles (id, full_name, role) VALUES (?, ?, ?)').run(adminId, 'Administrator', 'admin');
-    db.prepare('INSERT INTO users (id, username, password_hash) VALUES (?, ?, ?)').run(adminId, 'admin', hash);
+    db.prepare('INSERT OR IGNORE INTO profiles (id, full_name, role) VALUES (?, ?, ?)').run(adminId, 'Administrator', 'admin');
+    db.prepare('INSERT OR IGNORE INTO users (id, username, password_hash) VALUES (?, ?, ?)').run(adminId, 'admin', hash);
     console.log('Created default admin: admin / admin123');
 }
 
@@ -218,5 +225,4 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-const crypto = require('crypto');
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
