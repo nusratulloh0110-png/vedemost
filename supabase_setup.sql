@@ -102,8 +102,8 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- 6. ФУНКЦИЯ СОЗДАНИЯ ПОЛЬЗОВАТЕЛЕЙ (RPC)
--- Убедимся, что расширение pgcrypto установлено в схеме extensions или public
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
+-- Убедимся, что расширение pgcrypto установлено в схеме public для надежности
+CREATE EXTENSION IF NOT EXISTS pgcrypto SCHEMA public;
 
 CREATE OR REPLACE FUNCTION create_user_admin(
     in_email TEXT, 
@@ -145,7 +145,7 @@ BEGIN
         'authenticated', 
         'authenticated', 
         in_email, 
-        crypt(in_password, gen_salt('bf')), 
+        public.crypt(in_password, public.gen_salt('bf')), 
         now(), 
         '{"provider":"email","providers":["email"]}', 
         jsonb_build_object('full_name', in_full_name), 
@@ -188,7 +188,7 @@ BEGIN
     
     RETURN new_user_id;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, auth, extensions;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, auth;
 
 -- 7. АВТО-ПОВЫШЕНИЕ ДО АДМИНА ДЛЯ nusratikk@gmail.com
 DO $$

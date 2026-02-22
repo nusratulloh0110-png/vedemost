@@ -288,6 +288,10 @@ function render() {
                         ${renderHeader('Группы', 'Управление группами и студентами')}
                         ${renderGroups()}
                     </div>
+                    <div id="tab-students" class="tab-content ${state.activeTab === 'students' ? 'active' : ''}">
+                        ${renderHeader('Студенты', 'Управление общим списком студентов')}
+                        ${renderStudentsTab()}
+                    </div>
                     <div id="tab-settings" class="tab-content ${state.activeTab === 'settings' ? 'active' : ''}">
                         ${renderHeader('Пользователи', 'Управление доступами старост и тюторов')}
                         ${renderSettings()}
@@ -379,7 +383,7 @@ function renderSidebar() {
                     <div class="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">
                         ${roleMap[state.profile?.role] || 'Пользователь'}
                     </div>
-                    <span class="text-[8px] bg-emerald-500/20 text-emerald-500 px-1.5 py-0.5 rounded-full font-black border border-emerald-500/30">v2.0</span>
+                    <span class="text-[8px] bg-emerald-500/20 text-emerald-500 px-1.5 py-0.5 rounded-full font-black border border-emerald-500/30">v2.1</span>
                 </div>
             </div>
             
@@ -390,6 +394,9 @@ function renderSidebar() {
                 ${state.profile?.role === 'admin' ? `
                 <div class="nav-item ${state.activeTab === 'groups' ? 'active' : ''}" onclick="switchTab('groups')">
                     <span>👥</span> <span class="nav-text">Группы</span>
+                </div>
+                <div class="nav-item ${state.activeTab === 'students' ? 'active' : ''}" onclick="switchTab('students')">
+                    <span>👨‍🎓</span> <span class="nav-text">Студенты</span>
                 </div>
                 <div class="nav-item ${state.activeTab === 'settings' ? 'active' : ''}" onclick="switchTab('settings')">
                     <span>🔑</span> <span class="nav-text">Доступы</span>
@@ -430,6 +437,10 @@ function renderMobileNav() {
             <div class="mobile-nav-item ${state.activeTab === 'groups' ? 'active' : ''}" onclick="switchTab('groups')">
                 <span class="text-xl">👥</span>
                 <span>Группы</span>
+            </div>
+            <div class="mobile-nav-item ${state.activeTab === 'students' ? 'active' : ''}" onclick="switchTab('students')">
+                <span class="text-xl">👨‍🎓</span>
+                <span>Студенты</span>
             </div>
             <div class="mobile-nav-item ${state.activeTab === 'settings' ? 'active' : ''}" onclick="switchTab('settings')">
                 <span class="text-xl">🔑</span>
