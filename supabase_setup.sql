@@ -34,7 +34,6 @@ DROP POLICY IF EXISTS "Admins can manage attendance" ON attendance;
 CREATE POLICY "Admins can manage attendance" ON attendance FOR ALL USING (get_my_role() = 'admin') WITH CHECK (get_my_role() = 'admin');
 
 
--- 1. Обновляем создание пользователя (чиним связку identity для корректного входа)
 CREATE OR REPLACE FUNCTION create_user_admin(
     in_email TEXT, 
     in_password TEXT, 
@@ -50,7 +49,6 @@ BEGIN
         RAISE EXCEPTION 'Access denied. Only admins can create users.'; 
     END IF;
     
-    -- Генерируем ID заранее
     new_user_id := gen_random_uuid();
     
     INSERT INTO auth.users (
@@ -59,7 +57,6 @@ BEGIN
     )
     VALUES (
         new_user_id, 'authenticated', 'authenticated', in_email, 
-        -- Важно: используем cost=10 для совместимости с Supabase GoTrue
         extensions.crypt(in_password, extensions.gen_salt('bf', 10)), 
         now(), '{"provider":"email","providers":["email"]}', 
         jsonb_build_object('full_name', in_full_name), now(), now()
@@ -73,8 +70,13 @@ BEGIN
         'email', new_user_id::text, now(), now(), now()
     );
 
+    -- ИСПРАВЛЕНИЕ ОШИБКИ PROFILES_PKEY:
     INSERT INTO public.profiles (id, full_name, role, group_id) 
-    VALUES (new_user_id, in_full_name, in_role, in_group_id);
+    VALUES (new_user_id, in_full_name, in_role, in_group_id)
+    ON CONFLICT (id) DO UPDATE SET 
+        full_name = EXCLUDED.full_name,
+        role = EXCLUDED.role,
+        group_id = EXCLUDED.group_id;
     
     RETURN new_user_id;
 END;

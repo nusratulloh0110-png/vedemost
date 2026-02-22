@@ -961,25 +961,32 @@ window.addStudentJournal = async () => {
 
 function renderStatusSelector(studentId, currentStatus, isMobile = false) {
     const statuses = [
-        { id: 'present', label: 'П', full: 'Был' },
-        { id: 'absent', label: 'Н', full: 'Нет' },
-        { id: 'excused', label: 'У', full: 'Уваж.' }
+        { id: 'present', label: 'Пришел', activeClass: 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)] border-transparent' },
+        { id: 'absent', label: 'Не пришел', activeClass: 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)] border-transparent' },
+        { id: 'excused', label: 'Уважительная', activeClass: 'bg-orange-500 text-white shadow-[0_0_15px_rgba(245,158,11,0.4)] border-transparent' }
     ];
 
     const isUpdating = state.updatingStatus === studentId;
 
     return `
-        <div class="flex gap-2 ${isMobile ? 'status-grid w-full' : ''}">
-            ${statuses.map(s => `
+        <div class="flex gap-2 w-full min-w-[320px]">
+            ${statuses.map(s => {
+        const isActive = currentStatus === s.id;
+        // Базовые стили для кнопок
+        const baseClass = "flex-1 py-2.5 px-2 rounded-xl font-bold text-[11px] uppercase tracking-wide transition-all border text-center cursor-pointer";
+        // Стили неактивной кнопки
+        const inactiveClass = "bg-white/5 text-text-secondary border-white/10 hover:border-white/30 hover:bg-white/10";
+
+        return `
                 <button 
                     id="status-${studentId}-${s.id}"
                     onclick="updateStatus('${studentId}', '${s.id}')"
-                    class="status-btn status-btn-${s.id} ${currentStatus === s.id ? 'active' : ''} ${isUpdating ? 'btn-loading' : ''} ${isMobile ? 'w-full' : 'w-10'}"
+                    class="${baseClass} ${isActive ? s.activeClass : inactiveClass} ${isUpdating ? 'opacity-50 pointer-events-none' : ''}"
                 >
-                    <span class="font-black">${s.label}</span>
-                    ${isMobile ? `<span>${s.full}</span>` : ''}
+                    ${s.label}
                 </button>
-            `).join('')}
+                `;
+    }).join('')}
         </div>
     `;
 }
