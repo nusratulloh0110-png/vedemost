@@ -285,12 +285,8 @@ function render() {
                         ${renderJournal()}
                     </div>
                     <div id="tab-groups" class="tab-content ${state.activeTab === 'groups' ? 'active' : ''}">
-                        ${renderHeader('Группы', 'Управление учебными группами')}
+                        ${renderHeader('Группы', 'Управление группами и студентами')}
                         ${renderGroups()}
-                    </div>
-                    <div id="tab-students" class="tab-content ${state.activeTab === 'students' ? 'active' : ''}">
-                        ${renderHeader('Студенты', 'Управление списком студентов')}
-                        ${renderStudentsTab()}
                     </div>
                     <div id="tab-settings" class="tab-content ${state.activeTab === 'settings' ? 'active' : ''}">
                         ${renderHeader('Пользователи', 'Управление доступами старост и тюторов')}
@@ -392,9 +388,6 @@ function renderSidebar() {
                 <div class="nav-item ${state.activeTab === 'groups' ? 'active' : ''}" onclick="switchTab('groups')">
                     <span>👥</span> <span class="nav-text">Группы</span>
                 </div>
-                <div class="nav-item ${state.activeTab === 'students' ? 'active' : ''}" onclick="switchTab('students')">
-                    <span>🎓</span> <span class="nav-text">Студенты</span>
-                </div>
                 <div class="nav-item ${state.activeTab === 'settings' ? 'active' : ''}" onclick="switchTab('settings')">
                     <span>🔑</span> <span class="nav-text">Доступы</span>
                 </div>
@@ -434,10 +427,6 @@ function renderMobileNav() {
             <div class="mobile-nav-item ${state.activeTab === 'groups' ? 'active' : ''}" onclick="switchTab('groups')">
                 <span class="text-xl">👥</span>
                 <span>Группы</span>
-            </div>
-            <div class="mobile-nav-item ${state.activeTab === 'students' ? 'active' : ''}" onclick="switchTab('students')">
-                <span class="text-xl">🎓</span>
-                <span>Студенты</span>
             </div>
             <div class="mobile-nav-item ${state.activeTab === 'settings' ? 'active' : ''}" onclick="switchTab('settings')">
                 <span class="text-xl">🔑</span>
@@ -498,23 +487,39 @@ function renderGroups() {
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 ${state.groups.map(g => {
-        const count = state.allStudents?.filter(s => s.group_id === g.id).length || 0;
+        const groupStudents = state.allStudents?.filter(s => s.group_id === g.id) || [];
         return `
-                    <div class="bg-white/5 p-6 rounded-2xl border border-white/10 hover:border-emerald-500/50 transition-all flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start mb-2">
+                    <div class="bg-white/5 p-6 rounded-2xl border border-white/10 hover:border-emerald-500/50 transition-all">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
                                 <h3 class="text-xl font-bold">${g.name}</h3>
-                                <div class="text-[10px] bg-emerald-500/20 text-emerald-500 px-2 py-1 rounded-lg font-bold">
-                                    ${count} студ.
-                                </div>
+                                <p class="text-text-muted text-[10px]">Студентов: ${groupStudents.length}</p>
                             </div>
-                            <p class="text-text-muted text-[10px] mb-4">ID: ${g.id}</p>
+                            <div class="flex gap-2">
+                                <button onclick="enterGroup('${g.id}')" class="text-xs text-emerald-500 font-bold hover:underline">Открыть Журнал</button>
+                                ${isAdmin ? `
+                                <button onclick="showConfirm('Удалить группу ${g.name}?', () => deleteGroup('${g.id}'))" class="text-xs text-red-500 font-bold hover:underline">Удалить</button>
+                                ` : ''}
+                            </div>
                         </div>
+
                         ${isAdmin ? `
-                        <button onclick="showConfirm('Удалить группу ${g.name} и всех её студентов?', () => deleteGroup('${g.id}'))" 
-                                class="text-xs text-red-500 font-bold hover:underline self-start">
-                            Удалить группу
-                        </button>
+                        <div class="mt-4 pt-4 border-t border-white/5">
+                            <p class="text-[10px] font-bold text-text-muted uppercase mb-3 text-emerald-500">Добавить студента</p>
+                            <div class="flex gap-2">
+                                <input type="text" id="student-name-${g.id}" placeholder="ФИО Студента" class="input-premium text-sm py-2">
+                                <button onclick="addStudent('${g.id}')" class="btn btn-primary py-2 px-4 shadow-none">+</button>
+                            </div>
+                            
+                            <div class="mt-4 space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                ${groupStudents.length > 0 ? groupStudents.map(s => `
+                                    <div class="flex justify-between items-center p-2 bg-white/5 rounded-lg text-sm border border-white/5">
+                                        <span class="truncate">${s.full_name}</span>
+                                        <button onclick="showConfirm('Удалить ${s.full_name}?', () => removeStudent('${s.id}'))" class="text-red-400 hover:text-red-300 text-xs">✕</button>
+                                    </div>
+                                `).join('') : '<p class="text-[10px] text-text-muted italic">В группе нет студентов</p>'}
+                            </div>
+                        </div>
                         ` : ''}
                     </div>
                 `}).join('')}
@@ -595,12 +600,19 @@ window.createGroup = async () => {
     render();
 }
 
-window.addStudentGlobal = async () => {
-    const fullName = document.getElementById('new-student-name').value;
-    const groupId = document.getElementById('new-student-group').value;
+window.enterGroup = (groupId) => {
+    state.selectedGroupId = groupId;
+    state.activeTab = 'journal';
+    loadData();
+    render();
+};
 
-    if (!fullName || !groupId) {
-        showToast("Заполните ФИО и выберите группу", 'error');
+window.addStudent = async (groupId) => {
+    const input = document.getElementById(`student-name-${groupId}`);
+    const fullName = input.value;
+
+    if (!fullName) {
+        showToast("Введите ФИО студента", 'error');
         return;
     }
 
@@ -615,7 +627,7 @@ window.addStudentGlobal = async () => {
         showToast(error.message, 'error');
     } else {
         showToast("Студент успешно добавлен");
-        document.getElementById('new-student-name').value = '';
+        input.value = '';
         await loadData();
         render();
     }
@@ -809,42 +821,97 @@ async function loadUsers() {
 
 
 function renderJournal() {
-    if (state.students.length === 0) {
-        return `<div class="glass glass-card text-center py-20 text-text-muted">Нет данных для отображения</div>`;
+    const isAdmin = state.profile?.role === 'admin';
+    const hasStudents = state.students.length > 0;
+    const isGroupSelected = state.profile?.role === 'starosta' || state.selectedGroupId;
+
+    let content = '';
+
+    if (!isGroupSelected) {
+        content = `<div class="glass glass-card text-center py-20 text-text-muted">Выберите группу для отображения журнала</div>`;
+    } else if (!hasStudents) {
+        content = `
+            <div class="glass glass-card text-center py-10">
+                <p class="text-text-muted mb-6">В этой группе пока нет студентов</p>
+                ${isAdmin ? `
+                <div class="max-w-md mx-auto">
+                    <p class="text-[10px] font-bold text-text-muted uppercase mb-3 text-emerald-500 text-left">Быстрое добавление студента</p>
+                    <div class="flex gap-2">
+                        <input type="text" id="journal-student-name" placeholder="ФИО Студента" class="input-premium text-sm py-2">
+                        <button onclick="addStudentJournal()" class="btn btn-primary py-2 px-6">Добавить</button>
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+        `;
+    } else {
+        content = `
+            <div class="glass glass-card overflow-hidden animate-fade-in mb-6" style="animation-delay: 0.1s">
+                <table class="premium-table">
+                    <thead>
+                        <tr>
+                            <th>ФИО Студента</th>
+                            <th>Статус ${isAdmin ? '<span class="text-[10px] opacity-50 ml-1">(Клик для смены)</span>' : ''}</th>
+                            <th>Детали</th>
+                            ${isAdmin ? '<th>Удалить</th>' : ''}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${state.students.map(student => {
+            const att = state.attendance.find(a => a.student_id === student.id);
+            return `
+                                <tr>
+                                    <td class="font-bold cursor-default hover:text-emerald-400 transition-colors">${student.full_name}</td>
+                                    <td>
+                                        ${renderStatusSelector(student.id, att?.status)}
+                                    </td>
+                                    <td>
+                                        <button onclick="openOptions('${student.id}')" class="text-text-secondary hover:text-text-primary transition-colors flex items-center gap-1 text-xs">
+                                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM18 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                            ${att?.comment ? '📝' : 'Опции'}
+                                        </button>
+                                    </td>
+                                    ${isAdmin ? `
+                                    <td>
+                                        <button onclick="showConfirm('Удалить студента ${student.full_name}?', () => removeStudent('${student.id}'))" class="text-red-500 hover:text-red-400">✕</button>
+                                    </td>
+                                    ` : ''}
+                                </tr>
+                            `;
+        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+
+            ${isAdmin ? `
+            <div class="glass glass-card max-w-xl">
+                 <p class="text-[10px] font-bold text-text-muted uppercase mb-3 text-emerald-500">Добавить студента в текущую группу</p>
+                 <div class="flex gap-2">
+                    <input type="text" id="journal-student-name" placeholder="ФИО Студента" class="input-premium py-2">
+                    <button onclick="addStudentJournal()" class="btn btn-primary py-2 px-8">Добавить</button>
+                 </div>
+            </div>
+            ` : ''}
+        `;
     }
 
-    return `
-        <div class="glass glass-card overflow-hidden animate-fade-in" style="animation-delay: 0.1s">
-            <table class="premium-table">
-                <thead>
-                    <tr>
-                        <th>ФИО Студента</th>
-                        <th>Статус</th>
-                        <th>Действия</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${state.students.map(student => {
-        const att = state.attendance.find(a => a.student_id === student.id);
-        return `
-                            <tr>
-                                <td class="font-bold">${student.full_name}</td>
-                                <td>
-                                    ${renderStatusSelector(student.id, att?.status)}
-                                </td>
-                                <td>
-                                    <button onclick="openOptions('${student.id}')" class="text-text-secondary hover:text-text-primary transition-colors">
-                                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM18 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                                    </button>
-                                </td>
-                            </tr>
-                        `;
-    }).join('')}
-                </tbody>
-            </table>
-        </div>
-    `;
+    return content;
 }
+
+window.addStudentJournal = async () => {
+    const groupId = state.profile?.group_id || state.selectedGroupId;
+    const name = document.getElementById('journal-student-name').value;
+    if (!name || !groupId) return;
+    state.loading = true;
+    render();
+    const { error } = await supabaseClient.from('students').insert([{ full_name: name, group_id: groupId }]);
+    if (error) showToast(error.message, 'error');
+    else {
+        showToast("Студент добавлен");
+        await loadData();
+        render();
+    }
+};
 
 function renderStatusSelector(studentId, currentStatus) {
     const statuses = [
