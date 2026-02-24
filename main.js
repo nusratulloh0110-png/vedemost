@@ -15,7 +15,7 @@ const apiClient = {
                 state.user = null;
                 render();
             }
-            const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+            const error = await response.json().catch(() => ({ error: `Error ${response.status}: ${response.statusText}` }));
             throw new Error(error.error || 'Request failed');
         }
         if (response.status === 204) return null;
@@ -151,24 +151,27 @@ async function loadData() {
         const isAdmin = state.profile?.role === 'admin' || state.profile?.role === 'tutor';
 
         if (isAdmin) {
-            const [students, profiles] = await Promise.all([
+            const [students, profiles, groups] = await Promise.all([
                 apiClient.get('/api/students'),
-                apiClient.get('/api/admin/users')
+                apiClient.get('/api/admin/users'),
+                apiClient.get('/api/groups')
             ]);
             state.allStudents = students || [];
             state.allProfiles = profiles || [];
+            state.groups = groups || [];
         }
 
-        if (!state.selectedGroupId && !isAdmin) {
+        const groupId = state.selectedGroupId || state.profile?.group_id;
+
+        if (!groupId) {
             state.students = [];
             state.attendance = [];
             return;
         }
 
-        const query = state.selectedGroupId ? `?group_id=${state.selectedGroupId}` : '';
         const [students, attendance] = await Promise.all([
-            apiClient.get(state.selectedGroupId ? `/api/students?group_id=${state.selectedGroupId}` : '/api/students'),
-            apiClient.get(`/api/attendance${query}&date=${state.currentDate}`)
+            apiClient.get(`/api/students?group_id=${groupId}`),
+            apiClient.get(`/api/attendance?group_id=${groupId}&date=${state.currentDate}`)
         ]);
 
         state.students = students || [];
@@ -184,10 +187,10 @@ async function login(username, password) {
     render();
 
     try {
-        const { token, profile } = await apiClient.post('/api/login', { username, password });
-        localStorage.setItem('token', token);
-        state.user = { id: profile.id };
-        state.profile = profile;
+        const data = await apiClient.post('/api/login', { username: username.trim(), password });
+        localStorage.setItem('token', data.token);
+        state.user = { id: data.profile.id };
+        state.profile = data.profile;
         await loadProfile();
         showToast('Вы успешно вошли!');
     } catch (err) {

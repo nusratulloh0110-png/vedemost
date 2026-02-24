@@ -1,9 +1,21 @@
 services:
-  vedomost:
+  app:
     build: .
-    image: vedomost-pro:latest
+    image: vedomost-app:latest
+    expose:
+      - "3000"
+    volumes:
+      - ./database.sqlite:/app/database.sqlite
+    restart: always
+    environment:
+      - PORT=3000
+  
+  nginx:
+    image: nginx:alpine
     ports:
       - "80:80"
     volumes:
-      - ./database.sqlite:/app/database.sqlite
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
     restart: always
