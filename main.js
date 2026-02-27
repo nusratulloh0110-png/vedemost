@@ -148,7 +148,8 @@ async function loadProfile() {
 async function loadData() {
     state.loadingStep = 'Загрузка данных...';
     try {
-        const isAdmin = state.profile?.role === 'admin' || state.profile?.role === 'tutor';
+        const isAdmin = state.profile?.role === 'admin';
+        const isTutor = state.profile?.role === 'tutor';
 
         if (isAdmin) {
             const [students, profiles, groups] = await Promise.all([
@@ -158,6 +159,13 @@ async function loadData() {
             ]);
             state.allStudents = students || [];
             state.allProfiles = profiles || [];
+            state.groups = groups || [];
+        } else if (isTutor) {
+            const [students, groups] = await Promise.all([
+                apiClient.get('/api/students'),
+                apiClient.get('/api/groups')
+            ]);
+            state.allStudents = students || [];
             state.groups = groups || [];
         }
 
@@ -401,16 +409,26 @@ function renderMobileNav() {
 
 function renderHeader(title = 'Журнал посещаемости', subtitle = 'Управление отметками студентов') {
     return `
-        <header class="flex justify-between items-end mb-10 animate-fade-in flex-header">
+        <header class="flex justify-between items-end mb-6 animate-fade-in flex-header gap-4 flex-wrap">
             <div>
-                <h1 class="text-4xl font-black mb-2">${title}</h1>
-                <p class="text-text-secondary">${subtitle}</p>
+                <h1 class="text-3xl font-black mb-1">${title}</h1>
+                <p class="text-text-secondary text-sm">${subtitle}</p>
             </div>
             ${state.activeTab === 'journal' ? `
-            <div class="flex gap-4">
-                <button onclick="exportToExcel()" class="btn btn-secondary py-2">
-                    <span>📊</span> <span>Excel</span>
-                </button>
+            <div class="flex gap-2 flex-wrap items-center">
+                <div class="relative">
+                    <button onclick="toggleExportMenu()" class="btn btn-secondary py-2 flex items-center gap-2">
+                        <span>📊</span> <span>Excel</span>
+                        <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                    </button>
+                    <div id="export-menu" class="hidden absolute right-0 top-full mt-2 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl z-50 min-w-[180px]">
+                        <div class="p-2 text-[10px] font-bold text-text-muted uppercase px-3 pt-3">Период экспорта</div>
+                        <button onclick="exportToExcel('day')" class="w-full text-left px-4 py-2.5 text-sm hover:bg-white/5 transition-colors">📅 Сегодня</button>
+                        <button onclick="exportToExcel('week')" class="w-full text-left px-4 py-2.5 text-sm hover:bg-white/5 transition-colors">📅 Неделя (7 дней)</button>
+                        <button onclick="exportToExcel('month')" class="w-full text-left px-4 py-2.5 text-sm hover:bg-white/5 transition-colors">📅 Месяц (30 дней)</button>
+                        <button onclick="exportToExcel('halfyear')" class="w-full text-left px-4 py-2.5 text-sm hover:bg-white/5 transition-colors pb-3">📅 6 месяцев</button>
+                    </div>
+                </div>
                 <input type="date" value="${state.currentDate}" id="date-picker" class="input-premium py-2 w-auto">
                 ${state.profile && state.profile.role !== 'starosta' ? `
                 <select id="group-select" class="input-premium py-2 w-auto">
@@ -423,6 +441,20 @@ function renderHeader(title = 'Журнал посещаемости', subtitle 
         </header>
     `;
 }
+
+window.toggleExportMenu = () => {
+    const menu = document.getElementById('export-menu');
+    if (menu) menu.classList.toggle('hidden');
+    // Close on outside click
+    setTimeout(() => {
+        document.addEventListener('click', function closeMenu(e) {
+            if (!e.target.closest('#export-menu') && !e.target.closest('[onclick="toggleExportMenu()"]')) {
+                menu?.classList.add('hidden');
+                document.removeEventListener('click', closeMenu);
+            }
+        });
+    }, 10);
+};
 
 window.switchTab = (tab) => {
     state.activeTab = tab;
@@ -801,6 +833,7 @@ async function loadUsers() {
 
 function renderJournal() {
     const isAdmin = state.profile?.role === 'admin';
+    const isTutor = state.profile?.role === 'tutor';
     const hasStudents = state.students.length > 0;
     const isGroupSelected = state.profile?.role === 'starosta' || state.selectedGroupId;
 
@@ -824,41 +857,60 @@ function renderJournal() {
             </div>
         `;
     } else {
+        // Mobile-first: cards on small screens, table on large screens
+        const studentRows = state.students.map(student => {
+            const att = state.attendance.find(a => a.student_id === student.id);
+            const statusLabels = { present: '✅ Пришёл', absent: '❌ Не пришёл', excused: '🟡 Уважительная', late: '⏰ Опоздал', left_early: '🚶 Ушёл раньше' };
+            const currentLabel = statusLabels[att?.status] || '— Нет отметки';
+
+            return `
+                <!-- Mobile card -->
+                <div class="mobile-student-card glass rounded-2xl p-4 mb-3 md:hidden">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <p class="font-bold text-sm">${student.full_name}</p>
+                            <p class="text-xs text-text-muted mt-0.5">${currentLabel}</p>
+                        </div>
+                        <div class="flex gap-2 items-center">
+                            <button onclick="openOptions('${student.id}')" class="text-text-secondary hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10">
+                                ${att?.comment ? '📝' : '⋯'}
+                            </button>
+                            ${isAdmin ? `<button onclick="showConfirm('Удалить студента?', () => removeStudent('${student.id}'))" class="text-red-500 hover:text-red-400 p-1">✕</button>` : ''}
+                        </div>
+                    </div>
+                    ${renderStatusSelector(student.id, att?.status, true)}
+                </div>
+                <!-- Desktop table row -->
+                <tr class="hidden md:table-row">
+                    <td class="font-bold">${student.full_name}</td>
+                    <td>${renderStatusSelector(student.id, att?.status)}</td>
+                    <td>
+                        <button onclick="openOptions('${student.id}')" class="text-text-secondary hover:text-text-primary transition-colors flex items-center gap-1 text-xs">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM18 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                            ${att?.comment ? '📝' : 'Опции'}
+                        </button>
+                    </td>
+                    ${isAdmin ? `<td><button onclick="showConfirm('Удалить студента ${student.full_name}?', () => removeStudent('${student.id}'))" class="text-red-500 hover:text-red-400">✕</button></td>` : ''}
+                </tr>
+            `;
+        }).join('');
+
         content = `
-            <div class="glass glass-card overflow-hidden animate-fade-in mb-6" style="animation-delay: 0.1s">
+            <!-- Mobile list -->
+            <div class="md:hidden mb-4">${studentRows}</div>
+
+            <!-- Desktop table -->
+            <div class="glass glass-card overflow-x-auto animate-fade-in mb-6 hidden md:block" style="animation-delay: 0.1s">
                 <table class="premium-table">
                     <thead>
                         <tr>
                             <th>ФИО Студента</th>
-                            <th>Статус ${isAdmin ? '<span class="text-[10px] opacity-50 ml-1">(Клик для смены)</span>' : ''}</th>
+                            <th>Статус</th>
                             <th>Детали</th>
                             ${isAdmin ? '<th>Удалить</th>' : ''}
                         </tr>
                     </thead>
-                    <tbody>
-                        ${state.students.map(student => {
-            const att = state.attendance.find(a => a.student_id === student.id);
-            return `
-                                <tr>
-                                    <td class="font-bold cursor-default hover:text-emerald-400 transition-colors">${student.full_name}</td>
-                                    <td>
-                                        ${renderStatusSelector(student.id, att?.status)}
-                                    </td>
-                                    <td>
-                                        <button onclick="openOptions('${student.id}')" class="text-text-secondary hover:text-text-primary transition-colors flex items-center gap-1 text-xs">
-                                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM18 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                                            ${att?.comment ? '📝' : 'Опции'}
-                                        </button>
-                                    </td>
-                                    ${isAdmin ? `
-                                    <td>
-                                        <button onclick="showConfirm('Удалить студента ${student.full_name}?', () => removeStudent('${student.id}'))" class="text-red-500 hover:text-red-400">✕</button>
-                                    </td>
-                                    ` : ''}
-                                </tr>
-                            `;
-        }).join('')}
-                    </tbody>
+                    <tbody>${studentRows}</tbody>
                 </table>
             </div>
 
@@ -908,32 +960,30 @@ window.addStudentJournal = async () => {
 };
 
 function renderStatusSelector(studentId, currentStatus, isMobile = false) {
+    // late and left_early are treated as 'details' — map visually to present with a badge
+    const effectiveStatus = (currentStatus === 'late' || currentStatus === 'left_early') ? 'present' : currentStatus;
+    const detailBadge = currentStatus === 'late' ? ' ⏰' : currentStatus === 'left_early' ? ' 🚶' : '';
+
     const statuses = [
-        { id: 'present', label: 'Пришел', activeClass: 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)] border-transparent' },
-        { id: 'absent', label: 'Не пришел', activeClass: 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)] border-transparent' },
-        { id: 'excused', label: 'Уважительная', activeClass: 'bg-orange-500 text-white shadow-[0_0_15px_rgba(245,158,11,0.4)] border-transparent' }
+        { id: 'present', label: 'Пришёл' + detailBadge, activeClass: 'bg-emerald-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.4)] border-transparent' },
+        { id: 'absent', label: 'Не пришёл', activeClass: 'bg-red-500 text-white shadow-[0_0_12px_rgba(239,68,68,0.4)] border-transparent' },
+        { id: 'excused', label: 'Уважительная', activeClass: 'bg-orange-500 text-white shadow-[0_0_12px_rgba(245,158,11,0.4)] border-transparent' }
     ];
 
     const isUpdating = state.updatingStatus === studentId;
+    const baseClass = `flex-1 py-3 px-2 rounded-xl font-bold text-[11px] uppercase tracking-wide transition-all border text-center cursor-pointer ${isMobile ? 'py-3.5' : 'py-2.5'}`;
+    const inactiveClass = 'bg-white/5 text-text-secondary border-white/10 hover:border-white/30 hover:bg-white/10';
 
     return `
-        <div class="flex gap-2 w-full min-w-[320px]">
+        <div class="flex gap-2 w-full ${isMobile ? '' : 'min-w-[280px]'}">
             ${statuses.map(s => {
-        const isActive = currentStatus === s.id;
-        // Базовые стили для кнопок
-        const baseClass = "flex-1 py-2.5 px-2 rounded-xl font-bold text-[11px] uppercase tracking-wide transition-all border text-center cursor-pointer";
-        // Стили неактивной кнопки
-        const inactiveClass = "bg-white/5 text-text-secondary border-white/10 hover:border-white/30 hover:bg-white/10";
-
+        const isActive = effectiveStatus === s.id;
         return `
                 <button 
                     id="status-${studentId}-${s.id}"
                     onclick="updateStatus('${studentId}', '${s.id}')"
                     class="${baseClass} ${isActive ? s.activeClass : inactiveClass} ${isUpdating ? 'opacity-50 pointer-events-none' : ''}"
-                >
-                    ${s.label}
-                </button>
-                `;
+                >${s.label}</button>`;
     }).join('')}
         </div>
     `;
@@ -1174,42 +1224,92 @@ window.toggleRegGroup = () => {
     }
 };
 
-window.exportToExcel = () => {
+window.exportToExcel = async (period = 'day') => {
+    // Close the dropdown menu
+    document.getElementById('export-menu')?.classList.add('hidden');
+
     if (!state.students || state.students.length === 0) {
         showToast('Нет данных для экспорта', 'error');
         return;
     }
 
+    const isTutor = state.profile?.role === 'tutor' || state.profile?.role === 'admin';
+    const groupId = state.selectedGroupId || state.profile?.group_id;
+    const group = state.groups.find(g => g.id === groupId);
+    const groupName = group ? group.name : 'Все_группы';
+
+    // Calculate date range
+    const today = new Date();
+    const toDate = today.toISOString().split('T')[0];
+    let fromDate = toDate;
+    let periodLabel = 'День';
+
+    if (period === 'week') {
+        const d = new Date(today); d.setDate(d.getDate() - 6);
+        fromDate = d.toISOString().split('T')[0]; periodLabel = 'Неделя';
+    } else if (period === 'month') {
+        const d = new Date(today); d.setDate(d.getDate() - 29);
+        fromDate = d.toISOString().split('T')[0]; periodLabel = 'Месяц';
+    } else if (period === 'halfyear') {
+        const d = new Date(today); d.setDate(d.getDate() - 179);
+        fromDate = d.toISOString().split('T')[0]; periodLabel = '6 месяцев';
+    }
+
+    const basicStatusMap = { present: 'Присутствует', absent: 'Отсутствует', excused: 'Уважительная', late: 'Присутствует', left_early: 'Присутствует' };
+    const fullStatusMap = { present: 'Присутствует', absent: 'Отсутствует', excused: 'Уважительная', late: 'Опоздал', left_early: 'Ушёл раньше' };
+    const statusMap = isTutor ? fullStatusMap : basicStatusMap;
+
     try {
-        const data = state.students.map(s => {
-            const att = state.attendance.find(a => a.student_id === s.id);
-            const statusMap = {
-                present: 'Присутствует',
-                absent: 'Отсутствует',
-                excused: 'Уважительная',
-                late: 'Опоздал',
-                left_early: 'Ушел раньше'
-            };
-            return {
-                'ФИО Студента': s.full_name,
-                'Статус': statusMap[att?.status] || 'Нет отметки',
-                'Комментарий': att?.comment || ''
-            };
-        });
+        showToast('Подготовка данных...', 'success');
+
+        let attendanceData;
+        if (period === 'day') {
+            // Use already loaded data for today
+            attendanceData = state.attendance;
+        } else {
+            // Fetch range from server
+            const url = groupId
+                ? `/api/attendance?group_id=${groupId}&date_from=${fromDate}&date_to=${toDate}`
+                : `/api/attendance?date_from=${fromDate}&date_to=${toDate}`;
+            attendanceData = await apiClient.get(url);
+        }
+
+        let data;
+        if (period === 'day') {
+            // Single day: Student | Status | Comment(tutor only)
+            data = state.students.map(s => {
+                const att = attendanceData.find(a => a.student_id === s.id);
+                const row = { 'ФИО Студента': s.full_name, 'Статус': statusMap[att?.status] || 'Нет отметки' };
+                if (isTutor) row['Комментарий'] = att?.comment || '';
+                return row;
+            });
+        } else {
+            // Multi-day: Student | Date | Status | Comment(tutor only)
+            data = [];
+            state.students.forEach(s => {
+                const studentAtt = attendanceData.filter(a => a.student_id === s.id);
+                if (studentAtt.length === 0) {
+                    const row = { 'ФИО Студента': s.full_name, 'Дата': '—', 'Статус': 'Нет данных' };
+                    if (isTutor) row['Комментарий'] = '';
+                    data.push(row);
+                } else {
+                    studentAtt.forEach(att => {
+                        const row = { 'ФИО Студента': s.full_name, 'Дата': att.date, 'Статус': statusMap[att.status] || 'Нет отметки' };
+                        if (isTutor) row['Комментарий'] = att.comment || '';
+                        data.push(row);
+                    });
+                }
+            });
+        }
 
         const worksheet = XLSX.utils.json_to_sheet(data);
         const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Посещаемость");
-
-        const group = state.groups.find(g => g.id === state.selectedGroupId);
-        const groupName = group ? group.name : 'Все_группы';
-        const filename = `Vedomost_${groupName}_${state.currentDate}.xlsx`;
-
-        XLSX.writeFile(workbook, filename);
-        showToast('Excel файл скачан!');
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Посещаемость');
+        XLSX.writeFile(workbook, `Vedomost_${groupName}_${periodLabel}_${toDate}.xlsx`);
+        showToast('Excel файл скачан! ✅');
     } catch (err) {
-        console.error("Export error:", err);
-        showToast("Ошибка при экспорте", "error");
+        console.error('Export error:', err);
+        showToast('Ошибка при экспорте', 'error');
     }
 };
 

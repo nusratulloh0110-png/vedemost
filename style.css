@@ -488,3 +488,43 @@ body {
     display: table;
   }
 }
+
+/* Mobile Student Cards - Better touch targets */
+.mobile-student-card {
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  transition: border-color 0.2s ease;
+  cursor: default;
+}
+
+.mobile-student-card:active {
+  border-color: var(--border-glow);
+}
+
+/* Larger touch targets on mobile */
+@media (max-width: 768px) {
+  .btn {
+    padding: 0.875rem 1.25rem;
+    font-size: 0.875rem;
+  }
+
+  .input-premium {
+    padding: 0.875rem 1rem;
+    font-size: 1rem;
+    /* prevents iOS zoom on focus */
+  }
+
+  .glass-card {
+    padding: 1.25rem;
+    border-radius: 1.25rem;
+  }
+
+  /* Don't lift cards on mobile (bad UX) */
+  .glass-card:hover {
+    transform: none;
+  }
+
+  .mobile-student-card {
+    padding: 1rem;
+  }
+}

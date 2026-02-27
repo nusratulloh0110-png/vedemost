@@ -205,11 +205,14 @@ app.delete('/api/students/:id', authenticateToken, requireAdmin, (req, res) => {
 
 // Attendance
 app.get('/api/attendance', authenticateToken, (req, res) => {
-    const { date, group_id } = req.query;
+    const { date, group_id, date_from, date_to } = req.query;
     let query = 'SELECT * FROM attendance WHERE 1=1';
     const params = [];
     if (date) { query += ' AND date = ?'; params.push(date); }
+    if (date_from) { query += ' AND date >= ?'; params.push(date_from); }
+    if (date_to) { query += ' AND date <= ?'; params.push(date_to); }
     if (group_id) { query += ' AND group_id = ?'; params.push(group_id); }
+    query += ' ORDER BY date ASC';
     const attendance = db.prepare(query).all(...params);
     res.json(attendance);
 });
