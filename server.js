@@ -233,7 +233,7 @@ app.post('/api/attendance', authenticateToken, (req, res) => {
                 status = excluded.status,
                 comment = excluded.comment
         `).run(student_id, grp_id, status, date, comment);
-        res.sendStatus(200);
+        res.json({ ok: true });
     } catch (err) {
         console.error('[ERROR] Attendance update failed:', err);
         res.status(500).json({ error: err.message });
