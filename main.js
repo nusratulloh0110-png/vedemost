@@ -444,7 +444,23 @@ function renderHeader(title = 'Журнал посещаемости', subtitle 
 
 window.toggleExportMenu = () => {
     const menu = document.getElementById('export-menu');
-    if (menu) menu.classList.toggle('hidden');
+    if (!menu) return;
+    menu.classList.toggle('hidden');
+    if (!menu.classList.contains('hidden')) {
+        // Подгоняем позицию, чтобы не выходило за экран
+        menu.style.left = '';
+        menu.style.right = '';
+        const rect = menu.getBoundingClientRect();
+        const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+        // Если уходит вправо за границу — прижимаем к правому краю
+        if (rect.right > viewportWidth) {
+            menu.style.right = '0';
+        }
+        // Если уходит влево — прижимаем к левому краю
+        if (rect.left < 0) {
+            menu.style.left = '0';
+        }
+    }
     // Close on outside click
     setTimeout(() => {
         document.addEventListener('click', function closeMenu(e) {
@@ -860,8 +876,22 @@ function renderJournal() {
         // Mobile-first: cards on small screens, table on large screens
         const studentRows = state.students.map(student => {
             const att = state.attendance.find(a => a.student_id === student.id);
-            const statusLabels = { present: '✅ Пришёл', absent: '❌ Не пришёл', excused: '🟡 Уважительная', late: '⏰ Опоздал', left_early: '🚶 Ушёл раньше' };
-            const currentLabel = statusLabels[att?.status] || '— Нет отметки';
+            // Основной статус + доп. информация в скобках (опоздал / ушёл раньше)
+            const baseLabelMap = {
+                present: '✅ Пришёл',
+                absent: '❌ Не пришёл',
+                excused: '🟡 Уважительная',
+                late: '✅ Пришёл',
+                left_early: '✅ Пришёл'
+            };
+            const detailLabelMap = {
+                late: ' (Опоздал)',
+                left_early: ' (Ушёл раньше)'
+            };
+            const rawStatus = att?.status;
+            const baseLabel = rawStatus ? (baseLabelMap[rawStatus] || '— Нет отметки') : '— Нет отметки';
+            const detail = rawStatus ? (detailLabelMap[rawStatus] || '') : '';
+            const currentLabel = baseLabel + detail;
 
             return `
                 <!-- Mobile card -->
@@ -960,9 +990,9 @@ window.addStudentJournal = async () => {
 };
 
 function renderStatusSelector(studentId, currentStatus, isMobile = false) {
-    // late and left_early are treated as 'details' — map visually to present with a badge
+    // late и left_early считаем как "Пришёл" с дополнительной пометкой
     const effectiveStatus = (currentStatus === 'late' || currentStatus === 'left_early') ? 'present' : currentStatus;
-    const detailBadge = currentStatus === 'late' ? ' ⏰' : currentStatus === 'left_early' ? ' 🚶' : '';
+    const detailBadge = currentStatus === 'late' ? ' (Опоздал)' : currentStatus === 'left_early' ? ' (Ушёл раньше)' : '';
 
     const statuses = [
         { id: 'present', label: 'Пришёл' + detailBadge, activeClass: 'bg-emerald-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.4)] border-transparent' },
