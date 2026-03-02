@@ -1255,9 +1255,18 @@ window.exportToExcel = async (period = 'day') => {
         fromDate = d.toISOString().split('T')[0]; periodLabel = '6 месяцев';
     }
 
-    const basicStatusMap = { present: 'Присутствует', absent: 'Отсутствует', excused: 'Уважительная', late: 'Присутствует', left_early: 'Присутствует' };
-    const fullStatusMap = { present: 'Присутствует', absent: 'Отсутствует', excused: 'Уважительная', late: 'Опоздал', left_early: 'Ушёл раньше' };
-    const statusMap = isTutor ? fullStatusMap : basicStatusMap;
+    // Базовый статус и дополнительная информация (в скобках)
+    const baseStatusMap = {
+        present: 'Присутствует',
+        absent: 'Отсутствует',
+        excused: 'Уважительная',
+        late: 'Присутствует',
+        left_early: 'Присутствует'
+    };
+    const detailSuffixMap = {
+        late: ' (Опоздал)',
+        left_early: ' (Ушёл раньше)'
+    };
 
     try {
         showToast('Подготовка данных...', 'success');
@@ -1276,10 +1285,16 @@ window.exportToExcel = async (period = 'day') => {
 
         let data;
         if (period === 'day') {
-            // Single day: Student | Status | Comment(tutor only)
+            // Single day: Student | Status (с основной и доп. информацией) | Comment(tutor only)
             data = state.students.map(s => {
                 const att = attendanceData.find(a => a.student_id === s.id);
-                const row = { 'ФИО Студента': s.full_name, 'Статус': statusMap[att?.status] || 'Нет отметки' };
+                let statusText = 'Нет отметки';
+                if (att?.status) {
+                    const base = baseStatusMap[att.status] || 'Нет отметки';
+                    const suffix = detailSuffixMap[att.status] || '';
+                    statusText = base + suffix;
+                }
+                const row = { 'ФИО Студента': s.full_name, 'Статус': statusText };
                 if (isTutor) row['Комментарий'] = att?.comment || '';
                 return row;
             });
@@ -1294,7 +1309,13 @@ window.exportToExcel = async (period = 'day') => {
                     data.push(row);
                 } else {
                     studentAtt.forEach(att => {
-                        const row = { 'ФИО Студента': s.full_name, 'Дата': att.date, 'Статус': statusMap[att.status] || 'Нет отметки' };
+                        let statusText = 'Нет отметки';
+                        if (att.status) {
+                            const base = baseStatusMap[att.status] || 'Нет отметки';
+                            const suffix = detailSuffixMap[att.status] || '';
+                            statusText = base + suffix;
+                        }
+                        const row = { 'ФИО Студента': s.full_name, 'Дата': att.date, 'Статус': statusText };
                         if (isTutor) row['Комментарий'] = att.comment || '';
                         data.push(row);
                     });

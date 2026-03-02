@@ -242,6 +242,11 @@ body {
   z-index: 100;
 }
 
+/* Меню экспорта Excel всегда поверх нижней навигации */
+#export-menu {
+  z-index: 150;
+}
+
 /* Inputs */
 .input-premium {
   background: rgba(15, 23, 42, 0.6);
@@ -469,7 +474,7 @@ body {
   border-radius: 10px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .premium-table {
     display: none;
   }
@@ -479,7 +484,7 @@ body {
   }
 }
 
-@media (min-width: 641px) {
+@media (min-width: 769px) {
   .journal-mobile-list {
     display: none;
   }
