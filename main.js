@@ -154,6 +154,11 @@ function t(key) {
 window.changeLang = (lang) => {
     currentLang = lang;
     localStorage.setItem('lang', lang);
+    // Обновить активную кнопку floating switcher
+    const uzBtn = document.getElementById('lang-float-uz');
+    const ruBtn = document.getElementById('lang-float-ru');
+    if (uzBtn) uzBtn.classList.toggle('active', lang === 'uz');
+    if (ruBtn) ruBtn.classList.toggle('active', lang === 'ru');
     render();
 };
 
@@ -384,6 +389,16 @@ window.logout = async () => {
 function render() {
     const app = document.getElementById('app');
     const mobileNav = document.getElementById('mobile-nav-container');
+    const langFloat = document.getElementById('lang-float');
+
+    // Sync floating lang button
+    if (langFloat) {
+        langFloat.style.display = state.user ? 'flex' : 'none';
+        const uzBtn = document.getElementById('lang-float-uz');
+        const ruBtn = document.getElementById('lang-float-ru');
+        if (uzBtn) uzBtn.classList.toggle('active', currentLang === 'uz');
+        if (ruBtn) ruBtn.classList.toggle('active', currentLang === 'ru');
+    }
 
     if (!state.user) {
         app.innerHTML = renderLogin();
@@ -399,15 +414,15 @@ function render() {
                         ${renderJournal()}
                     </div>
                     <div id="tab-groups" class="tab-content ${state.activeTab === 'groups' ? 'active' : ''}">
-                        ${renderHeader('Группы', 'Управление группами и студентами')}
+                        ${renderHeader(t('nav_groups'), currentLang === 'uz' ? 'Guruhlar va talabalarni boshqarish' : 'Управление группами и студентами')}
                         ${renderGroups()}
                     </div>
                     <div id="tab-students" class="tab-content ${state.activeTab === 'students' ? 'active' : ''}">
-                        ${renderHeader('Студенты', 'Управление общим списком студентов')}
+                        ${renderHeader(t('nav_students'), currentLang === 'uz' ? 'Umumiy talabalar ro\'yxatini boshqarish' : 'Управление общим списком студентов')}
                         ${renderStudentsTab()}
                     </div>
                     <div id="tab-settings" class="tab-content ${state.activeTab === 'settings' ? 'active' : ''}">
-                        ${renderHeader('Пользователи', 'Управление доступами старост и тюторов')}
+                        ${renderHeader(currentLang === 'uz' ? 'Foydalanuvchilar' : 'Пользователи', currentLang === 'uz' ? 'Starosta va tyutorlar kirishini boshqarish' : 'Управление доступами старост и тюторов')}
                         ${renderSettings()}
                     </div>
                 </main>
@@ -573,15 +588,9 @@ function renderHeader(title, subtitle) {
     const _title = title || t('journal_title');
     const _subtitle = subtitle || t('journal_subtitle');
     return `
-        <header class="journal-header animate-fade-in flex justify-between items-start gap-2">
-            <div>
-                <h1 class="font-black mb-1 title-responsive">${_title}</h1>
-                <p class="text-text-secondary text-xs sm:text-sm">${_subtitle}</p>
-            </div>
-            <div class="lang-switcher-header shrink-0 mt-1">
-                <button onclick="changeLang('uz')" class="lang-btn ${currentLang === 'uz' ? 'lang-btn-active' : ''}">UZ</button>
-                <button onclick="changeLang('ru')" class="lang-btn ${currentLang === 'ru' ? 'lang-btn-active' : ''}">RU</button>
-            </div>
+        <header class="journal-header animate-fade-in">
+            <h1 class="title-responsive">${_title}</h1>
+            <p class="text-text-secondary" style="font-size:0.85rem; margin-top:0.25rem;">${_subtitle}</p>
         </header>
         ${state.activeTab === 'journal' ? `
         <div class="journal-toolbar">

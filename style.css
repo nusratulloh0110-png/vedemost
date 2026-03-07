@@ -919,3 +919,50 @@ header {
   border-radius: 0 0.5rem 0.5rem 0;
   border-left: none;
 }
+
+/* =============================================
+   FLOATING LANGUAGE TOGGLE
+   Always-visible pill in top-right corner
+   ============================================= */
+.lang-float {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+  display: flex;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 2rem;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+}
+
+.lang-float-btn {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.lang-float-btn:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.lang-float-btn.active {
+  background: #10b981;
+  color: white;
+}
+
+/* On desktop, hide the floating button since sidebar has the switcher */
+@media (min-width: 769px) {
+  .lang-float {
+    display: none !important;
+  }
+}
