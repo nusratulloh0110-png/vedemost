@@ -167,6 +167,10 @@ async function loadData() {
             ]);
             state.allStudents = students || [];
             state.groups = groups || [];
+            // Автоматически выбираем первую группу, если тютор ещё не выбрал
+            if (!state.selectedGroupId && state.groups.length > 0) {
+                state.selectedGroupId = state.groups[0].id;
+            }
         }
 
         const groupId = state.selectedGroupId || state.profile?.group_id;
@@ -409,63 +413,76 @@ function renderMobileNav() {
 
 function renderHeader(title = 'Журнал посещаемости', subtitle = 'Управление отметками студентов') {
     return `
-        <header class="flex justify-between items-end mb-6 animate-fade-in flex-header gap-4 flex-wrap">
+        <header class="journal-header animate-fade-in">
             <div>
                 <h1 class="text-3xl font-black mb-1">${title}</h1>
                 <p class="text-text-secondary text-sm">${subtitle}</p>
             </div>
-            ${state.activeTab === 'journal' ? `
-            <div class="flex gap-2 flex-wrap items-center">
-                <div class="relative">
-                    <button onclick="toggleExportMenu()" class="btn btn-secondary py-2 flex items-center gap-2">
+        </header>
+        ${state.activeTab === 'journal' ? `
+        <div class="journal-toolbar">
+            <div class="journal-toolbar-row">
+                <div class="export-wrapper" id="export-wrapper">
+                    <button onclick="toggleExportMenu()" class="btn btn-secondary btn-export" id="excel-btn">
                         <span>📊</span> <span>Excel</span>
                         <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
                     </button>
-                    <div id="export-menu" class="hidden absolute right-0 top-full mt-2 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl z-50 min-w-[180px]">
-                        <div class="p-2 text-[10px] font-bold text-text-muted uppercase px-3 pt-3">Период экспорта</div>
-                        <button onclick="exportToExcel('day')" class="w-full text-left px-4 py-2.5 text-sm hover:bg-white/5 transition-colors">📅 Сегодня</button>
-                        <button onclick="exportToExcel('week')" class="w-full text-left px-4 py-2.5 text-sm hover:bg-white/5 transition-colors">📅 Неделя (7 дней)</button>
-                        <button onclick="exportToExcel('month')" class="w-full text-left px-4 py-2.5 text-sm hover:bg-white/5 transition-colors">📅 Месяц (30 дней)</button>
-                        <button onclick="exportToExcel('halfyear')" class="w-full text-left px-4 py-2.5 text-sm hover:bg-white/5 transition-colors pb-3">📅 6 месяцев</button>
-                    </div>
+                    <input type="date" value="${state.currentDate}" id="date-picker" class="input-premium input-date">
                 </div>
-                <input type="date" value="${state.currentDate}" id="date-picker" class="input-premium py-2 w-auto">
                 ${state.profile && state.profile.role !== 'starosta' ? `
-                <select id="group-select" class="input-premium py-2 w-auto">
-                    <option value="">Все группы</option>
+                <select id="group-select" class="input-premium input-group-select">
+                    <option value="">— Выберите группу —</option>
                     ${state.groups.map(g => `<option value="${g.id}" ${state.selectedGroupId === g.id ? 'selected' : ''}>${g.name}</option>`).join('')}
                 </select>
                 ` : ''}
             </div>
-            ` : ''}
-        </header>
+        </div>
+        <!-- Dropdown рендерится в body через JS -->
+        ` : ''}
     `;
 }
 
 window.toggleExportMenu = () => {
-    const menu = document.getElementById('export-menu');
-    if (!menu) return;
-    menu.classList.toggle('hidden');
-    if (!menu.classList.contains('hidden')) {
-        // Подгоняем позицию, чтобы не выходило за экран
-        menu.style.left = '';
-        menu.style.right = '';
-        const rect = menu.getBoundingClientRect();
-        const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
-        // Если уходит вправо за границу — прижимаем к правому краю
-        if (rect.right > viewportWidth) {
-            menu.style.right = '0';
-        }
-        // Если уходит влево — прижимаем к левому краю
-        if (rect.left < 0) {
-            menu.style.left = '0';
-        }
+    // Удаляем старое меню если есть
+    let menu = document.getElementById('export-menu');
+    if (menu) {
+        menu.remove();
+        return;
     }
-    // Close on outside click
+
+    // Создаём меню и добавляем в body (не в скроллируемый контейнер!)
+    menu = document.createElement('div');
+    menu.id = 'export-menu';
+    menu.className = 'export-dropdown-fixed';
+    menu.innerHTML = `
+        <div class="export-dropdown-title">Период экспорта</div>
+        <button onclick="exportToExcel('day')" class="export-dropdown-item">📅 Сегодня</button>
+        <button onclick="exportToExcel('week')" class="export-dropdown-item">📅 Неделя (7 дней)</button>
+        <button onclick="exportToExcel('month')" class="export-dropdown-item">📅 Месяц (30 дней)</button>
+        <button onclick="exportToExcel('halfyear')" class="export-dropdown-item">📅 6 месяцев</button>
+    `;
+    document.body.appendChild(menu);
+
+    // Позиционируем под кнопкой
+    const btn = document.getElementById('excel-btn');
+    if (btn) {
+        const rect = btn.getBoundingClientRect();
+        menu.style.top = (rect.bottom + 8) + 'px';
+        menu.style.left = rect.left + 'px';
+        // Если уходит вправо за экран — сдвигаем влево
+        setTimeout(() => {
+            const menuRect = menu.getBoundingClientRect();
+            if (menuRect.right > window.innerWidth - 8) {
+                menu.style.left = (window.innerWidth - menuRect.width - 8) + 'px';
+            }
+        }, 0);
+    }
+
+    // Закрываем при клике вне
     setTimeout(() => {
         document.addEventListener('click', function closeMenu(e) {
-            if (!e.target.closest('#export-menu') && !e.target.closest('[onclick="toggleExportMenu()"]')) {
-                menu?.classList.add('hidden');
+            if (!e.target.closest('#export-menu') && !e.target.closest('#excel-btn')) {
+                document.getElementById('export-menu')?.remove();
                 document.removeEventListener('click', closeMenu);
             }
         });
@@ -474,8 +491,8 @@ window.toggleExportMenu = () => {
 
 window.switchTab = (tab) => {
     state.activeTab = tab;
-    if (tab === 'settings') loadUsers();
-    render();
+    if (tab === 'settings') loadData().then(() => render());
+    else render();
 };
 
 function renderGroups() {
@@ -749,12 +766,6 @@ function renderSettings() {
             </div>
         </div>
 
-        <div class="glass glass-card">
-            <h3 class="text-xl font-bold mb-6">Зарегистрированные пользователи</h3>
-            <div id="users-list-container">
-                <div class="loader text-center py-10">Загрузка пользователей...</div>
-            </div>
-        </div>
     `;
 }
 
@@ -873,45 +884,38 @@ function renderJournal() {
             </div>
         `;
     } else {
-        // Mobile-first: cards on small screens, table on large screens
-        const studentRows = state.students.map(student => {
+        // === МОБИЛЬНЫЕ КАРТОЧКИ (journal-mobile-list) ===
+        const mobileCards = state.students.map(student => {
             const att = state.attendance.find(a => a.student_id === student.id);
-            // Основной статус + доп. информация в скобках (опоздал / ушёл раньше)
-            const baseLabelMap = {
-                present: '✅ Пришёл',
-                absent: '❌ Не пришёл',
-                excused: '🟡 Уважительная',
-                late: '✅ Пришёл',
-                left_early: '✅ Пришёл'
-            };
-            const detailLabelMap = {
-                late: ' (Опоздал)',
-                left_early: ' (Ушёл раньше)'
-            };
-            const rawStatus = att?.status;
-            const baseLabel = rawStatus ? (baseLabelMap[rawStatus] || '— Нет отметки') : '— Нет отметки';
-            const detail = rawStatus ? (detailLabelMap[rawStatus] || '') : '';
-            const currentLabel = baseLabel + detail;
-
+            const statusLabel = !att?.status ? '' :
+                att.status === 'present' ? '✅ Пришёл' :
+                    att.status === 'absent' ? '❌ Не пришёл' :
+                        att.status === 'excused' ? '⚠️ Уважительная' :
+                            att.status === 'late' ? '⏰ Пришёл (Опоздал)' : '🚶 Пришёл (Ушёл раньше)';
+            const statusColor = !att?.status ? '#64748b' :
+                (att.status === 'present' || att.status === 'late' || att.status === 'left_early') ? '#10b981' :
+                    att.status === 'absent' ? '#ef4444' : '#f59e0b';
             return `
-                <!-- Mobile card -->
-                <div class="mobile-student-card glass rounded-2xl p-4 mb-3 md:hidden">
-                    <div class="flex justify-between items-start mb-3">
-                        <div>
-                            <p class="font-bold text-sm">${student.full_name}</p>
-                            <p class="text-xs text-text-muted mt-0.5">${currentLabel}</p>
+                <div class="jc-card">
+                    <div class="jc-card-header">
+                        <div class="jc-card-info">
+                            <p class="jc-card-name">${student.full_name}</p>
+                            <span class="jc-card-status" style="color:${statusColor}">${statusLabel || '— не отмечен —'}</span>
                         </div>
-                        <div class="flex gap-2 items-center">
-                            <button onclick="openOptions('${student.id}')" class="text-text-secondary hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10">
-                                ${att?.comment ? '📝' : '⋯'}
-                            </button>
-                            ${isAdmin ? `<button onclick="showConfirm('Удалить студента?', () => removeStudent('${student.id}'))" class="text-red-500 hover:text-red-400 p-1">✕</button>` : ''}
+                        <div class="jc-card-btns">
+                            <button onclick="openOptions('${student.id}')" class="jc-btn-opts" title="Детали">${att?.comment ? '📝' : '⋯'}</button>
+                            ${isAdmin ? `<button onclick="showConfirm('Удалить студента?', () => removeStudent('${student.id}'))" class="jc-btn-del">✕</button>` : ''}
                         </div>
                     </div>
                     ${renderStatusSelector(student.id, att?.status, true)}
                 </div>
-                <!-- Desktop table row -->
-                <tr class="hidden md:table-row">
+            `;
+        }).join('');
+
+        const desktopRows = state.students.map(student => {
+            const att = state.attendance.find(a => a.student_id === student.id);
+            return `
+                <tr>
                     <td class="font-bold">${student.full_name}</td>
                     <td>${renderStatusSelector(student.id, att?.status)}</td>
                     <td>
@@ -926,31 +930,31 @@ function renderJournal() {
         }).join('');
 
         content = `
-            <!-- Mobile list -->
-            <div class="md:hidden mb-4">${studentRows}</div>
+            <div class="journal-mobile-list">${mobileCards}</div>
 
-            <!-- Desktop table -->
-            <div class="glass glass-card overflow-x-auto animate-fade-in mb-6 hidden md:block" style="animation-delay: 0.1s">
-                <table class="premium-table">
-                    <thead>
-                        <tr>
-                            <th>ФИО Студента</th>
-                            <th>Статус</th>
-                            <th>Детали</th>
-                            ${isAdmin ? '<th>Удалить</th>' : ''}
-                        </tr>
-                    </thead>
-                    <tbody>${studentRows}</tbody>
-                </table>
+            <div class="journal-desktop-table glass glass-card animate-fade-in" style="animation-delay: 0.1s">
+                <div class="overflow-x-auto">
+                    <table class="premium-table">
+                        <thead>
+                            <tr>
+                                <th>ФИО Студента</th>
+                                <th>Статус</th>
+                                <th>Детали</th>
+                                ${isAdmin ? '<th>Удалить</th>' : ''}
+                            </tr>
+                        </thead>
+                        <tbody>${desktopRows}</tbody>
+                    </table>
+                </div>
             </div>
 
-            ${isAdmin ? `
-            <div class="glass glass-card max-w-xl">
-                 <p class="text-[10px] font-bold text-text-muted uppercase mb-3 text-emerald-500">Добавить студента в текущую группу</p>
-                 <div class="flex gap-2">
-                    <input type="text" id="journal-student-name" placeholder="ФИО Студента" class="input-premium py-2">
-                    <button onclick="addStudentJournal()" class="btn btn-primary py-2 px-8">Добавить</button>
-                 </div>
+            ${isAdmin || isTutor ? `
+            <div class="glass glass-card add-student-card">
+                <p class="add-student-label">Добавить студента в текущую группу</p>
+                <div class="add-student-row">
+                    <input type="text" id="journal-student-name" placeholder="ФИО Студента" class="input-premium">
+                    <button onclick="addStudentJournal()" class="btn btn-primary">Добавить</button>
+                </div>
             </div>
             ` : ''}
         `;
@@ -1195,7 +1199,7 @@ window.saveUserProfile = async (userId) => {
         showToast("Пользователь успешно обновлен!");
         closeModal();
         await loadData();
-        if (state.activeTab === 'settings') await loadUsers();
+        render();
 
     } catch (err) {
         showToast(err.message, 'error');
@@ -1214,7 +1218,7 @@ window.deleteUserAdmin = (userId, userName) => {
             showToast("Пользователь удален!");
             closeModal();
             await loadData();
-            if (state.activeTab === 'settings') loadUsers();
+            render();
         } catch (err) {
             showToast(err.message, 'error');
         } finally {
@@ -1256,7 +1260,7 @@ window.toggleRegGroup = () => {
 
 window.exportToExcel = async (period = 'day') => {
     // Close the dropdown menu
-    document.getElementById('export-menu')?.classList.add('hidden');
+    document.getElementById('export-menu')?.remove();
 
     if (!state.students || state.students.length === 0) {
         showToast('Нет данных для экспорта', 'error');

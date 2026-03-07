@@ -107,6 +107,14 @@ const requireAdmin = (req, res, next) => {
     next();
 };
 
+const requireAdminOrTutor = (req, res, next) => {
+    const profile = db.prepare('SELECT role FROM profiles WHERE id = ?').get(req.user.id);
+    if (!profile || (profile.role !== 'admin' && profile.role !== 'tutor')) {
+        return res.status(403).json({ error: 'Access denied: admin or tutor role required' });
+    }
+    next();
+};
+
 // --- API Routes ---
 
 // Health check
@@ -186,7 +194,7 @@ app.get('/api/students', authenticateToken, (req, res) => {
     res.json(students);
 });
 
-app.post('/api/students', authenticateToken, requireAdmin, (req, res) => {
+app.post('/api/students', authenticateToken, requireAdminOrTutor, (req, res) => {
     try {
         const { full_name, group_id } = req.body;
         if (!full_name || !group_id) return res.status(400).json({ error: 'full_name and group_id are required' });
@@ -198,7 +206,7 @@ app.post('/api/students', authenticateToken, requireAdmin, (req, res) => {
     }
 });
 
-app.delete('/api/students/:id', authenticateToken, requireAdmin, (req, res) => {
+app.delete('/api/students/:id', authenticateToken, requireAdminOrTutor, (req, res) => {
     db.prepare('DELETE FROM students WHERE id = ?').run(req.params.id);
     res.sendStatus(204);
 });
