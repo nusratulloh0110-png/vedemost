@@ -560,10 +560,7 @@ function renderMobileNav() {
                 <span>${t('nav_access')}</span>
             </div>
             ` : ''}
-            <div class="mobile-nav-item" onclick="changeLang(currentLang === 'uz' ? 'ru' : 'uz')" style="color:var(--accent-primary)">
-                <span class="text-xl">🌐</span>
-                <span>${currentLang === 'uz' ? 'RU' : 'UZ'}</span>
-            </div>
+
             <div class="mobile-nav-item text-red-400" onclick="logout()">
                 <span class="text-xl">🚪</span>
                 <span>${t('nav_logout')}</span>
@@ -576,10 +573,14 @@ function renderHeader(title, subtitle) {
     const _title = title || t('journal_title');
     const _subtitle = subtitle || t('journal_subtitle');
     return `
-        <header class="journal-header animate-fade-in">
+        <header class="journal-header animate-fade-in flex justify-between items-start gap-2">
             <div>
-                <h1 class="text-3xl font-black mb-1">${_title}</h1>
-                <p class="text-text-secondary text-sm">${_subtitle}</p>
+                <h1 class="font-black mb-1 title-responsive">${_title}</h1>
+                <p class="text-text-secondary text-xs sm:text-sm">${_subtitle}</p>
+            </div>
+            <div class="lang-switcher-header shrink-0 mt-1">
+                <button onclick="changeLang('uz')" class="lang-btn ${currentLang === 'uz' ? 'lang-btn-active' : ''}">UZ</button>
+                <button onclick="changeLang('ru')" class="lang-btn ${currentLang === 'ru' ? 'lang-btn-active' : ''}">RU</button>
             </div>
         </header>
         ${state.activeTab === 'journal' ? `

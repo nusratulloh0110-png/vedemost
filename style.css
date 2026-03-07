@@ -526,8 +526,8 @@ header {
   margin-bottom: 1rem;
 }
 
-.journal-header h1 {
-  font-size: 2rem;
+.title-responsive {
+  font-size: 1.5rem;
   font-weight: 900;
   line-height: 1.2;
 }
@@ -550,7 +550,7 @@ header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  flex-wrap: nowrap;
+  width: 100%;
 }
 
 .btn-export {
@@ -578,7 +578,7 @@ header {
     margin-bottom: 0.5rem;
   }
 
-  .journal-header h1 {
+  .title-responsive {
     font-size: 2.25rem;
   }
 
@@ -592,6 +592,10 @@ header {
   .input-date {
     width: auto;
     flex: none;
+  }
+
+  .export-wrapper {
+    width: auto;
   }
 
   .input-group-select {
@@ -894,4 +898,24 @@ header {
   display: flex;
   justify-content: center;
   margin-bottom: 0.5rem;
+}
+
+.lang-switcher-header {
+  display: flex;
+  gap: 0;
+}
+
+.lang-switcher-header .lang-btn {
+  margin: 0;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0;
+}
+
+.lang-switcher-header .lang-btn:first-child {
+  border-radius: 0.5rem 0 0 0.5rem;
+}
+
+.lang-switcher-header .lang-btn:last-child {
+  border-radius: 0 0.5rem 0.5rem 0;
+  border-left: none;
 }
