@@ -485,36 +485,33 @@ function renderLogin() {
 function renderSidebar() {
     if (!state.profile) {
         if (state.loading) {
-            return `<aside class="sidebar glass"><p class="p-4 text-xs font-bold text-emerald-500 animate-pulse">${t('loading_profile')}</p></aside>`;
+            return `<aside class="sidebar glass"><p style="padding:1rem;font-size:0.75rem;font-weight:700;color:#10b981;">${t('loading_profile')}</p></aside>`;
         }
         return `
             <aside class="sidebar glass">
-                <div class="brand mb-4">
-                    <h2 class="brand-text text-xl font-bold text-red-400">${t('error_title')}</h2>
-                    <p class="text-[10px] text-red-300 font-bold mt-1">${state.error || t('profile_not_loaded')}</p>
+                <div style="margin-bottom:1rem;">
+                    <h2 style="font-size:1.1rem;font-weight:900;color:#ef4444;">${t('error_title')}</h2>
+                    <p style="font-size:0.7rem;color:#fca5a5;margin-top:0.25rem;">${state.error || t('profile_not_loaded')}</p>
                 </div>
-                <div class="space-y-2">
-                    <button onclick="logout()" class="btn btn-secondary w-full text-xs">${t('btn_reenter')}</button>
-                    <button onclick="location.reload()" class="btn btn-primary w-full text-xs mt-2">${t('btn_refresh')}</button>
-                </div>
+                <button onclick="logout()" class="btn btn-secondary" style="width:100%;font-size:0.8rem;">${t('btn_reenter')}</button>
+                <button onclick="location.reload()" class="btn btn-primary" style="width:100%;font-size:0.8rem;margin-top:0.5rem;">${t('btn_refresh')}</button>
             </aside>
         `;
     }
 
     const roles = t('roles');
+    const roleLabel = roles[state.profile?.role] || state.profile?.role || '';
     return `
         <aside class="sidebar glass">
-            <div class="brand mb-4">
-                <h2 class="brand-text text-xl font-bold">Vedomost <span class="text-emerald-500">PRO</span></h2>
-                <div class="flex items-center gap-2 mt-1">
-                    <div class="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">
-                        ${roles[state.profile?.role] || state.profile?.role}
-                    </div>
-                    <span class="text-[8px] bg-emerald-500/20 text-emerald-500 px-1.5 py-0.5 rounded-full font-black border border-emerald-500/30">${t('version_label')}</span>
+            <div class="sidebar-brand">
+                <span class="sidebar-logo">Vedomost <span style="color:#10b981;">PRO</span></span>
+                <div style="margin-top:0.25rem;display:flex;align-items:center;gap:0.5rem;">
+                    <span style="font-size:0.65rem;color:#10b981;font-weight:800;text-transform:uppercase;letter-spacing:0.05em;">${roleLabel}</span>
+                    <span style="font-size:0.6rem;background:rgba(16,185,129,0.15);color:#10b981;padding:0.1rem 0.4rem;border-radius:2rem;font-weight:900;border:1px solid rgba(16,185,129,0.3);">${t('version_label')}</span>
                 </div>
             </div>
 
-            <nav class="flex-1 space-y-2">
+            <nav>
                 <div class="nav-item ${state.activeTab === 'journal' ? 'active' : ''}" onclick="switchTab('journal')">
                     <span>📋</span> <span class="nav-text">${t('nav_journal')}</span>
                 </div>
@@ -531,18 +528,18 @@ function renderSidebar() {
                 ` : ''}
             </nav>
 
-            <div class="mt-auto space-y-3">
-                <div class="lang-switcher-sidebar">
-                    <button onclick="changeLang('uz')" class="lang-btn ${currentLang === 'uz' ? 'lang-btn-active' : ''}">UZ</button>
-                    <button onclick="changeLang('ru')" class="lang-btn ${currentLang === 'ru' ? 'lang-btn-active' : ''}">RU</button>
+            <div class="sidebar-bottom">
+                <div class="sidebar-lang">
+                    <button onclick="changeLang('uz')" class="sidebar-lang-btn ${currentLang === 'uz' ? 'active' : ''}">🇺🇿 UZ</button>
+                    <button onclick="changeLang('ru')" class="sidebar-lang-btn ${currentLang === 'ru' ? 'active' : ''}">🇷🇺 RU</button>
                 </div>
-                <div class="bg-white/5 p-3 rounded-xl">
-                    <p class="text-[10px] text-text-muted mb-1 font-bold">${t('support_label')}</p>
-                    <a href="https://nusra.uz" target="_blank" class="text-xs font-bold text-text-secondary hover:text-white transition-colors">
-                        Powered by <span class="text-emerald-500">Nusra.uz</span>
+                <div style="background:rgba(255,255,255,0.04);padding:0.75rem;border-radius:0.75rem;border:1px solid rgba(255,255,255,0.08);">
+                    <p style="font-size:0.6rem;color:var(--text-muted);font-weight:800;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.3rem;">${t('support_label')}</p>
+                    <a href="https://nusra.uz" target="_blank" style="font-size:0.75rem;font-weight:700;color:var(--text-secondary);text-decoration:none;">
+                        Powered by <span style="color:#10b981;">Nusra.uz</span>
                     </a>
                 </div>
-                <button id="logout-btn" class="nav-item w-full text-red-400 hover:text-red-300">
+                <button id="logout-btn" class="nav-item" style="width:100%;color:#f87171;">
                     <span>🚪</span> <span class="nav-text">${t('nav_logout')}</span>
                 </button>
             </div>

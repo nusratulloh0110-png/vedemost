@@ -5,36 +5,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>Vedomost PRO | Davomadlik</title>
+  <!-- Fonts with swap for speed -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
-    rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            'bg-primary': '#0a0f18',
-            'accent-primary': '#10b981',
-            'text-secondary': '#94a3b8',
-            'text-muted': '#64748b',
-          }
-        }
-      }
-    }
-  </script>
-  <link rel="stylesheet" href="./style.css?v=3.6">
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- xlsx for Excel export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+  <!-- Main styles (no Tailwind — faster!) -->
+  <link rel="stylesheet" href="./style.css?v=3.7">
 </head>
 
-<body class="bg-bg-primary text-white">
+<body>
 
-  <div id="app">
-    <!-- App content rendered by main.js -->
-  </div>
+  <div id="app"></div>
 
-  <!-- Floating Language Toggle — ALWAYS visible when logged in -->
+  <!-- Floating Language Toggle — shown via JS when logged in -->
   <div id="lang-float" class="lang-float" style="display:none;">
     <button id="lang-float-uz" class="lang-float-btn" onclick="changeLang('uz')">UZ</button>
     <button id="lang-float-ru" class="lang-float-btn" onclick="changeLang('ru')">RU</button>
@@ -43,7 +28,7 @@
   <!-- Mobile Bottom Navigation -->
   <div id="mobile-nav-container"></div>
 
-  <script src="./main.js?v=3.6"></script>
+  <script src="./main.js?v=3.7" defer></script>
 </body>
 
 </html>

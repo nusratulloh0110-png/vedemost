@@ -49,6 +49,255 @@ body {
   overflow-x: hidden;
 }
 
+/* =============================================
+   UTILITY CLASSES (replaces Tailwind CDN)
+   ============================================= */
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.items-start {
+  align-items: flex-start;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.gap-3 {
+  gap: 0.75rem;
+}
+
+.gap-4 {
+  gap: 1rem;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.max-w-sm {
+  max-width: 24rem;
+}
+
+.max-w-xs {
+  max-width: 20rem;
+}
+
+.max-w-md {
+  max-width: 28rem;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-xs {
+  font-size: 0.75rem;
+}
+
+.text-sm {
+  font-size: 0.875rem;
+}
+
+.text-xl {
+  font-size: 1.25rem;
+}
+
+.text-3xl {
+  font-size: 1.875rem;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.font-extrabold {
+  font-weight: 800;
+}
+
+.font-black {
+  font-weight: 900;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.uppercase {
+  text-transform: uppercase;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
+.mb-6 {
+  margin-bottom: 1.5rem;
+}
+
+.mb-8 {
+  margin-bottom: 2rem;
+}
+
+.mt-2 {
+  margin-top: 0.5rem;
+}
+
+.mt-6 {
+  margin-top: 1.5rem;
+}
+
+.p-4 {
+  padding: 1rem;
+}
+
+.p-6 {
+  padding: 1.5rem;
+}
+
+.py-3 {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.space-y-4>*+* {
+  margin-top: 1rem;
+}
+
+.space-y-2>*+* {
+  margin-top: 0.5rem;
+}
+
+.fixed {
+  position: fixed;
+}
+
+.inset-0 {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.z-\[200\] {
+  z-index: 200;
+}
+
+.text-white {
+  color: #fff;
+}
+
+.text-red-400 {
+  color: #f87171;
+}
+
+.text-emerald-500 {
+  color: #10b981;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+.rounded-full {
+  border-radius: 9999px;
+}
+
+.w-16 {
+  width: 4rem;
+}
+
+.h-16 {
+  height: 4rem;
+}
+
+.w-5 {
+  width: 1.25rem;
+}
+
+.h-5 {
+  height: 1.25rem;
+}
+
+.border-4 {
+  border-width: 4px;
+}
+
+.border-2 {
+  border-width: 2px;
+}
+
+.border-emerald-500 {
+  border-color: #10b981;
+}
+
+.border-t-transparent {
+  border-top-color: transparent;
+}
+
+.border-t-white {
+  border-top-color: #fff;
+}
+
+.border-white\/30 {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.bg-black\/80 {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.bg-bg-primary {
+  background-color: #0a0f18;
+}
+
+.backdrop-blur-md {
+  backdrop-filter: blur(12px);
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: .5;
+  }
+}
+
+
+
 /* Glassmorphism */
 .glass {
   background: var(--surface);
@@ -74,17 +323,64 @@ body {
 
 /* Sidebar */
 .sidebar {
-  width: 280px;
+  width: 240px;
   height: 100vh;
   position: fixed;
   left: 0;
   top: 0;
   z-index: 50;
-  padding: 2rem 1.5rem;
+  padding: 1.5rem 1rem;
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
   border-right: 1px solid var(--border-color);
+  overflow-y: auto;
+}
+
+.sidebar nav {
+  flex: 1;
+  /* takes all remaining space so mt-auto works below */
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 1.5rem;
+}
+
+.sidebar-bottom {
+  margin-top: auto;
+  padding-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Language toggle inside sidebar */
+.sidebar-lang {
+  display: flex;
+  gap: 0.375rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 0.375rem;
+}
+
+.sidebar-lang-btn {
+  flex: 1;
+  padding: 0.4rem 0;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.sidebar-lang-btn.active {
+  background: #10b981;
+  color: white;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
 }
 
 .nav-item {
@@ -111,12 +407,22 @@ body {
   border-left: 3px solid var(--accent-primary);
 }
 
+.sidebar-brand {
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-logo {
+  font-size: 1.2rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
 /* Main Content */
 .main-content {
-  margin-left: 280px;
-  padding: 2rem 2.5rem;
+  margin-left: 240px;
+  padding: 1.5rem 2rem;
   max-width: 1400px;
-  /* Единый отступ сверху и по бокам */
 }
 
 /* Buttons */
@@ -960,9 +1266,21 @@ header {
   color: white;
 }
 
-/* On desktop, hide the floating button since sidebar has the switcher */
+/* On desktop, lang-float positions top-right accounting for sidebar */
 @media (min-width: 769px) {
   .lang-float {
+    top: 1rem;
+    right: 1rem;
     display: none !important;
+    /* hidden on desktop — sidebar has lang switcher */
+  }
+}
+
+@media (max-width: 768px) {
+  .lang-float {
+    display: flex !important;
+    /* always show on mobile */
+    top: 0.75rem;
+    right: 0.75rem;
   }
 }
