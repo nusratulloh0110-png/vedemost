@@ -1228,28 +1228,29 @@ header {
 
 /* =============================================
    FLOATING LANGUAGE TOGGLE
-   Always-visible pill in top-right corner
+   Always visible in top-right corner on mobile.
+   On desktop (>=769px) it's hidden because sidebar has the switcher.
    ============================================= */
 .lang-float {
   position: fixed;
-  top: 1rem;
-  right: 1rem;
-  z-index: 9999;
+  top: 0.85rem;
+  right: 0.85rem;
+  z-index: 99999;
   display: flex;
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(10, 15, 24, 0.92);
+  border: 1.5px solid rgba(16, 185, 129, 0.35);
   border-radius: 2rem;
   overflow: hidden;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
 }
 
 .lang-float-btn {
-  padding: 0.4rem 0.9rem;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  color: var(--text-secondary);
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.5);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -1266,21 +1267,9 @@ header {
   color: white;
 }
 
-/* On desktop, lang-float positions top-right accounting for sidebar */
+/* On desktop (sidebar visible), hide the floating button */
 @media (min-width: 769px) {
   .lang-float {
-    top: 1rem;
-    right: 1rem;
-    display: none !important;
-    /* hidden on desktop — sidebar has lang switcher */
-  }
-}
-
-@media (max-width: 768px) {
-  .lang-float {
-    display: flex !important;
-    /* always show on mobile */
-    top: 0.75rem;
-    right: 0.75rem;
+    display: none;
   }
 }

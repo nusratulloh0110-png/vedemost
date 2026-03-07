@@ -5,30 +5,39 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>Vedomost PRO | Davomadlik</title>
-  <!-- Fonts with swap for speed -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-  <!-- xlsx for Excel export -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-  <!-- Main styles (no Tailwind — faster!) -->
-  <link rel="stylesheet" href="./style.css?v=3.7">
+  <link rel="stylesheet" href="./style.css?v=3.9">
 </head>
 
 <body>
 
   <div id="app"></div>
 
-  <!-- Floating Language Toggle — shown via JS when logged in -->
-  <div id="lang-float" class="lang-float" style="display:none;">
+  <!--
+    LANGUAGE TOGGLE — Always visible, no JS needed to show.
+    CSS controls visibility: shown on mobile always, hidden on wide desktop (sidebar covers it).
+    Active state set immediately from localStorage before main.js loads.
+  -->
+  <div id="lang-float" class="lang-float">
     <button id="lang-float-uz" class="lang-float-btn" onclick="changeLang('uz')">UZ</button>
     <button id="lang-float-ru" class="lang-float-btn" onclick="changeLang('ru')">RU</button>
   </div>
+  <script>
+    // Set active lang button IMMEDIATELY (before main.js)
+    (function () {
+      var lang = localStorage.getItem('lang') || 'uz';
+      var btn = document.getElementById('lang-float-' + lang);
+      if (btn) btn.classList.add('active');
+    })();
+  </script>
 
   <!-- Mobile Bottom Navigation -->
   <div id="mobile-nav-container"></div>
 
-  <script src="./main.js?v=3.7" defer></script>
+  <script src="./main.js?v=3.9" defer></script>
 </body>
 
 </html>

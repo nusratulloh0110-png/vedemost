@@ -154,11 +154,11 @@ function t(key) {
 window.changeLang = (lang) => {
     currentLang = lang;
     localStorage.setItem('lang', lang);
-    // Обновить активную кнопку floating switcher
-    const uzBtn = document.getElementById('lang-float-uz');
-    const ruBtn = document.getElementById('lang-float-ru');
-    if (uzBtn) uzBtn.classList.toggle('active', lang === 'uz');
-    if (ruBtn) ruBtn.classList.toggle('active', lang === 'ru');
+    // Update floating button active states
+    const uz = document.getElementById('lang-float-uz');
+    const ru = document.getElementById('lang-float-ru');
+    if (uz) { uz.classList.toggle('active', lang === 'uz'); }
+    if (ru) { ru.classList.toggle('active', lang === 'ru'); }
     render();
 };
 
@@ -389,16 +389,11 @@ window.logout = async () => {
 function render() {
     const app = document.getElementById('app');
     const mobileNav = document.getElementById('mobile-nav-container');
-    const langFloat = document.getElementById('lang-float');
-
-    // Sync floating lang button
-    if (langFloat) {
-        langFloat.style.display = state.user ? 'flex' : 'none';
-        const uzBtn = document.getElementById('lang-float-uz');
-        const ruBtn = document.getElementById('lang-float-ru');
-        if (uzBtn) uzBtn.classList.toggle('active', currentLang === 'uz');
-        if (ruBtn) ruBtn.classList.toggle('active', currentLang === 'ru');
-    }
+    // Update active state of floating lang buttons
+    const uzBtn = document.getElementById('lang-float-uz');
+    const ruBtn = document.getElementById('lang-float-ru');
+    if (uzBtn) uzBtn.classList.toggle('active', currentLang === 'uz');
+    if (ruBtn) ruBtn.classList.toggle('active', currentLang === 'ru');
 
     if (!state.user) {
         app.innerHTML = renderLogin();
