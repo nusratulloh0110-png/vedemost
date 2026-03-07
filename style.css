@@ -791,3 +791,107 @@ header {
     transform: none;
   }
 }
+
+/* =============================================
+   STATUS BUTTONS (replaces Tailwind inline)
+   ============================================= */
+.status-btn-row {
+  display: flex;
+  gap: 0.375rem;
+  width: 100%;
+}
+
+.status-btn-row--mobile {
+  gap: 0.375rem;
+}
+
+.status-btn {
+  flex: 1;
+  min-width: 0;
+  padding: 0.7rem 0.25rem;
+  border-radius: 0.75rem;
+  font-weight: 800;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  border: 1px solid transparent;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-btn-row--mobile .status-btn {
+  padding: 0.8rem 0.25rem;
+  font-size: 10px;
+}
+
+.status-btn-inactive {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.status-btn-inactive:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.status-btn-present {
+  background: #10b981;
+  color: white;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.35);
+}
+
+.status-btn-absent {
+  background: #ef4444;
+  color: white;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.35);
+}
+
+.status-btn-excused {
+  background: #f59e0b;
+  color: white;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.35);
+}
+
+.status-btn-loading {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* =============================================
+   LANGUAGE SWITCHER
+   ============================================= */
+.lang-btn {
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  letter-spacing: 0.05em;
+  margin: 0 0.125rem;
+}
+
+.lang-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.lang-btn-active {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.lang-switcher-sidebar {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}

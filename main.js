@@ -1,3 +1,162 @@
+// ==============================================
+// INTERNATIONALIZATION (i18n)
+// ==============================================
+const TRANSLATIONS = {
+    uz: {
+        // Навигация
+        nav_journal: 'Jurnal', nav_groups: 'Guruhlar', nav_students: 'Talabalar',
+        nav_access: 'Kirishlar', nav_logout: 'Chiqish',
+        // Заголовок журнала
+        journal_title: 'Davomadlik jurnali',
+        journal_subtitle: "Talabalar belgilarini boshqarish",
+        // Статусы (кнопки)
+        status_present: 'Keldi', status_absent: 'Kelmadi', status_excused: 'Uzrli',
+        status_late_btn: 'Keldi (Kech)', status_early_btn: 'Keldi (Erta)',
+        // Статус бейдж в карточке
+        att_present: '✅ Keldi', att_absent: '❌ Kelmadi',
+        att_excused: '⚠️ Uzrli', att_late: '⏰ Keldi (Kechikdi)',
+        att_early: '🚶 Keldi (Erta ketdi)', att_none: '— belgilanmagan —',
+        // Журнал
+        select_group_prompt: "Jurnalni ko'rish uchun guruhni tanlang",
+        no_students: "Bu guruhda hali talabalar yo'q",
+        quick_add: "Talabani tezkor qo'shish",
+        add_student_label: "Joriy guruhga talaba qo'shish",
+        add_student_placeholder: 'Talaba F.I.O.',
+        btn_add: "Qo'shish",
+        // Excel
+        excel_period: 'Eksport davri', excel_today: '📅 Bugun',
+        excel_week: '📅 Hafta (7 kun)', excel_month: '📅 Oy (30 kun)', excel_halfyear: '📅 6 oy',
+        // Группы
+        groups_title: "Guruhlar ro'yxati", all_groups: '— Guruhni tanlang —',
+        create_group_placeholder: "Yangi guruh nomi (mas. 211-22)",
+        btn_create_group: '+ Guruh yaratish', btn_open_journal: "Jurnalni ochish",
+        btn_delete: "O'chirish", no_students_in_group: "Guruhda talabalar yo'q",
+        add_student_to_group: "Guruhga talaba qo'shish",
+        // Студенты
+        students_title: "Talabani qo'shish", students_all_title: "Barcha talabalar",
+        student_fio_label: 'Talaba F.I.O.', student_fio_placeholder: 'Familiya Ism Otasining ismi',
+        group_label: 'Guruh', group_placeholder: '— Guruhni tanlang —',
+        btn_add_student: "Talaba qo'shish",
+        // Пользователи / Доступы
+        users_title: "Yangi foydalanuvchi yaratish",
+        users_existing: "Mavjud foydalanuvchilar", users_registered: "Ro'yxatdan o'tgan foydalanuvchilar",
+        field_fio: 'F.I.O.', field_login: 'Login', field_password: 'Parol',
+        field_role: 'Rol', field_group: 'Guruh',
+        login_placeholder: 'Faqat lotin harflari va raqamlar',
+        password_placeholder: '******', fio_placeholder: 'Ivan Ivanov',
+        no_group: '— Guruh yo\'q —',
+        btn_create_account: "Hisob yaratish",
+        role_admin: 'Admin', role_tutor: 'Tyutor', role_starosta: 'Starosta',
+        // Модальное окно опций
+        options_title: 'Davomadlik tafsilotlari', options_status: 'Status',
+        options_comment: 'Sabab / Izoh', options_comment_placeholder: 'Sababni yozing...',
+        opt_present: 'Keldi', opt_absent: 'Kelmadi', opt_excused: 'Uzrli',
+        opt_late: 'Kechikdi', opt_early: 'Erta ketdi',
+        btn_save: 'Saqlash', btn_cancel: 'Bekor qilish',
+        // Логин
+        login_subtitle: 'Boshqaruv paneli', login_username_ph: 'Login (masalan: admin)',
+        login_password_ph: 'Parol', login_btn: 'Tizimga kirish', login_loading: 'Kirilmoqda...',
+        // Подтверждение
+        confirm_title: 'Tasdiqlash', confirm_yes: 'Ha, aminman', confirm_cancel: 'Bekor qilish',
+        // Тосты
+        toast_success: 'Muvaffaqiyatli', toast_error: 'Xatolik',
+        // Загрузка
+        loading_start: 'Tizim yuklanmoqda...', loading_profile: 'Profil yuklanmoqda...',
+        loading_data: "Ma'lumotlar yuklanmoqda...",
+        loading_wait: "Bu birinchi ishga tushirishda yoki sekin internet aloqasida vaqt olishi mumkin.",
+        btn_continue: 'Kutmasdan davom etish', btn_relogin: "Chiqib, qayta kirish",
+        // Прочее
+        support_label: 'QOLLAB-QUVVATLASH', all_groups_option: 'Barcha guruhlar',
+        edit_user: "O'zgartirish", delete_user: "Hisobni o'chirish",
+        user_settings: "Foydalanuvchi sozlamalari", new_login: 'Yangi Login',
+        new_password: 'Yangi Parol', leave_empty: "O'zgartirmasangiz bo'sh qoldiring",
+        btn_update_account: "Hisobni yangilash",
+        delete_group_confirm: "Guruhni va undagi barcha talabalarni o'chirish?",
+        delete_student_confirm: "Talabani o'chirish?",
+        delete_user_confirm: "Bu foydalanuvchini BUTUNLAY o'chirmoqchimisiz?",
+        profile_not_loaded: 'Profil yuklanmadi',
+        error_title: 'Xatolik!', btn_reenter: "Qayta kirish", btn_refresh: "Yangilash",
+        roles: { admin: 'Administrator', tutor: 'Tyutor', starosta: 'Starosta' },
+        version_label: 'v2.1',
+    },
+    ru: {
+        nav_journal: 'Журнал', nav_groups: 'Группы', nav_students: 'Студенты',
+        nav_access: 'Доступы', nav_logout: 'Выйти',
+        journal_title: 'Журнал посещаемости',
+        journal_subtitle: 'Управление отметками студентов',
+        status_present: 'Пришёл', status_absent: 'Не пришёл', status_excused: 'Уважит.',
+        status_late_btn: 'Пришёл (Поздн.)', status_early_btn: 'Пришёл (Рано)',
+        att_present: '✅ Пришёл', att_absent: '❌ Не пришёл',
+        att_excused: '⚠️ Уважительная', att_late: '⏰ Пришёл (Опоздал)',
+        att_early: '🚶 Пришёл (Ушёл раньше)', att_none: '— не отмечен —',
+        select_group_prompt: 'Выберите группу для отображения журнала',
+        no_students: 'В этой группе пока нет студентов',
+        quick_add: 'Быстрое добавление студента',
+        add_student_label: 'Добавить студента в текущую группу',
+        add_student_placeholder: 'ФИО Студента', btn_add: 'Добавить',
+        excel_period: 'Период экспорта', excel_today: '📅 Сегодня',
+        excel_week: '📅 Неделя (7 дней)', excel_month: '📅 Месяц (30 дней)', excel_halfyear: '📅 6 месяцев',
+        groups_title: 'Список групп', all_groups: '— Выберите группу —',
+        create_group_placeholder: 'Название новой группы (напр. 211-22)',
+        btn_create_group: '+ Создать группу', btn_open_journal: 'Открыть Журнал',
+        btn_delete: 'Удалить', no_students_in_group: 'В группе нет студентов',
+        add_student_to_group: 'Добавить студента',
+        students_title: 'Добавить студента', students_all_title: 'Все студенты',
+        student_fio_label: 'ФИО Студента', student_fio_placeholder: 'Фамилия Имя Отчество',
+        group_label: 'Группа', group_placeholder: '— Выберите группу —',
+        btn_add_student: 'Добавить Студента',
+        users_title: 'Создать нового пользователя',
+        users_existing: 'Существующие пользователи', users_registered: 'Зарегистрированные пользователи',
+        field_fio: 'ФИО', field_login: 'Логин', field_password: 'Пароль',
+        field_role: 'Роль', field_group: 'Группа',
+        login_placeholder: 'Только латиница и цифры',
+        password_placeholder: '******', fio_placeholder: 'Иван Иванов',
+        no_group: '— Нет группы —',
+        btn_create_account: 'Создать аккаунт',
+        role_admin: 'Админ', role_tutor: 'Тютор', role_starosta: 'Староста',
+        options_title: 'Детали посещаемости', options_status: 'Статус',
+        options_comment: 'Причина / Комментарий', options_comment_placeholder: 'Напишите причину...',
+        opt_present: 'Присутствует', opt_absent: 'Отсутствует', opt_excused: 'Уважительная',
+        opt_late: 'Опоздал', opt_early: 'Ушел раньше',
+        btn_save: 'Сохранить', btn_cancel: 'Отмена',
+        login_subtitle: 'Панель управления', login_username_ph: 'Логин (например, admin)',
+        login_password_ph: 'Пароль', login_btn: 'Войти в систему', login_loading: 'Входим...',
+        confirm_title: 'Подтверждение', confirm_yes: 'Да, уверен', confirm_cancel: 'Отмена',
+        toast_success: 'Успешно', toast_error: 'Ошибка',
+        loading_start: 'Старт системы...', loading_profile: 'Загрузка профиля...',
+        loading_data: 'Загрузка данных...',
+        loading_wait: 'Это может занять время при первом запуске или медленном соединении с сервером.',
+        btn_continue: 'Продолжить без ожидания', btn_relogin: 'Выйти и зайти заново',
+        support_label: 'ПОДДЕРЖКА', all_groups_option: 'Все группы',
+        edit_user: 'Изменить', delete_user: 'Удалить аккаунт',
+        user_settings: 'Настройки пользователя', new_login: 'Новый Логин',
+        new_password: 'Новый Пароль', leave_empty: 'Оставьте пустым, если не меняете',
+        btn_update_account: 'Обновить аккаунт',
+        delete_group_confirm: 'Удалить группу и всех студентов в ней?',
+        delete_student_confirm: 'Удалить студента?',
+        delete_user_confirm: 'Вы уверены, что хотите НАВСЕГДА удалить пользователя',
+        profile_not_loaded: 'Профиль не загружен',
+        error_title: 'Ошибка!', btn_reenter: 'Перезайти', btn_refresh: 'Обновить',
+        roles: { admin: 'Администратор', tutor: 'Тютор', starosta: 'Староста' },
+        version_label: 'v2.1',
+    }
+};
+
+// Текущий язык из localStorage (по умолчанию Uzbek)
+let currentLang = localStorage.getItem('lang') || 'uz';
+
+// Функция перевода
+function t(key) {
+    return TRANSLATIONS[currentLang]?.[key] ?? TRANSLATIONS['uz']?.[key] ?? key;
+}
+
+// Смена языка
+window.changeLang = (lang) => {
+    currentLang = lang;
+    localStorage.setItem('lang', lang);
+    render();
+};
+
 const apiClient = {
     async request(path, options = {}) {
         const token = localStorage.getItem('token');
@@ -285,19 +444,23 @@ function renderLogin() {
             <div class="glass glass-card max-w-sm w-full animate-fade-in">
                 <div class="text-center mb-8">
                     <h1 class="text-3xl font-extrabold mb-2">Vedomost <span class="text-emerald-500">PRO</span></h1>
-                    <p class="text-text-secondary text-sm">Панель управления</p>
+                    <p class="text-text-secondary text-sm">${t('login_subtitle')}</p>
                 </div>
                 <div class="space-y-4">
-                    <input type="text" id="username" placeholder="Логин (например, admin)" class="input-premium">
-                    <input type="password" id="password" placeholder="Пароль" class="input-premium">
+                    <input type="text" id="username" placeholder="${t('login_username_ph')}" class="input-premium">
+                    <input type="password" id="password" placeholder="${t('login_password_ph')}" class="input-premium">
                     <button id="login-btn" class="btn btn-primary w-full mt-2 flex items-center justify-center gap-3" ${state.loading ? 'disabled' : ''}>
                         ${state.loading ? `
                             <div class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                            Входим...
-                        ` : 'Войти в систему'}
+                            ${t('login_loading')}
+                        ` : t('login_btn')}
                     </button>
                 </div>
-                <p class="text-center text-text-muted text-xs mt-6">Powered by <a href="https://nusra.uz" target="_blank" class="text-emerald-500 font-bold hover:underline">Nusra.uz</a></p>
+                <div class="flex justify-center gap-2 mt-5">
+                    <button onclick="changeLang('uz')" class="lang-btn ${currentLang === 'uz' ? 'lang-btn-active' : ''}">UZ</button>
+                    <button onclick="changeLang('ru')" class="lang-btn ${currentLang === 'ru' ? 'lang-btn-active' : ''}">RU</button>
+                </div>
+                <p class="text-center text-text-muted text-xs mt-4">Powered by <a href="https://nusra.uz" target="_blank" class="text-emerald-500 font-bold hover:underline">Nusra.uz</a></p>
             </div>
         </div>
     `;
@@ -307,68 +470,65 @@ function renderLogin() {
 function renderSidebar() {
     if (!state.profile) {
         if (state.loading) {
-            return `<aside class="sidebar glass"><p class="p-4 text-xs font-bold text-emerald-500 animate-pulse">Загрузка профиля...</p></aside>`;
+            return `<aside class="sidebar glass"><p class="p-4 text-xs font-bold text-emerald-500 animate-pulse">${t('loading_profile')}</p></aside>`;
         }
-
         return `
             <aside class="sidebar glass">
                 <div class="brand mb-4">
-                    <h2 class="brand-text text-xl font-bold text-red-400">Ошибка!</h2>
-                    <p class="text-[10px] text-red-300 font-bold mt-1">Детали: ${state.error || 'Профиль не загружен'}</p>
+                    <h2 class="brand-text text-xl font-bold text-red-400">${t('error_title')}</h2>
+                    <p class="text-[10px] text-red-300 font-bold mt-1">${state.error || t('profile_not_loaded')}</p>
                 </div>
                 <div class="space-y-2">
-                    <button onclick="logout()" class="btn btn-secondary w-full text-xs">Перезайти</button>
-                    <button onclick="location.reload()" class="btn btn-primary w-full text-xs mt-2">Обновить</button>
-                </div>
-                <div class="mt-4 p-3 bg-red-500/10 rounded-xl border border-red-500/20">
-                    <p class="text-[9px] text-text-secondary leading-normal">
-                        Совет: Убедитесь, что вы вставили <b>Anon Key</b> (eyJ...) в начало файла <code>main.js</code> и выполнили SQL скрипт.
-                    </p>
+                    <button onclick="logout()" class="btn btn-secondary w-full text-xs">${t('btn_reenter')}</button>
+                    <button onclick="location.reload()" class="btn btn-primary w-full text-xs mt-2">${t('btn_refresh')}</button>
                 </div>
             </aside>
         `;
     }
 
-    const roleMap = { admin: 'Администратор', tutor: 'Тютор', starosta: 'Староста' };
+    const roles = t('roles');
     return `
         <aside class="sidebar glass">
             <div class="brand mb-4">
                 <h2 class="brand-text text-xl font-bold">Vedomost <span class="text-emerald-500">PRO</span></h2>
                 <div class="flex items-center gap-2 mt-1">
                     <div class="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">
-                        ${roleMap[state.profile?.role] || 'Пользователь'}
+                        ${roles[state.profile?.role] || state.profile?.role}
                     </div>
-                    <span class="text-[8px] bg-emerald-500/20 text-emerald-500 px-1.5 py-0.5 rounded-full font-black border border-emerald-500/30">v2.1</span>
+                    <span class="text-[8px] bg-emerald-500/20 text-emerald-500 px-1.5 py-0.5 rounded-full font-black border border-emerald-500/30">${t('version_label')}</span>
                 </div>
             </div>
-            
+
             <nav class="flex-1 space-y-2">
                 <div class="nav-item ${state.activeTab === 'journal' ? 'active' : ''}" onclick="switchTab('journal')">
-                    <span>📋</span> <span class="nav-text">Журнал</span>
+                    <span>📋</span> <span class="nav-text">${t('nav_journal')}</span>
                 </div>
                 ${state.profile?.role === 'admin' ? `
                 <div class="nav-item ${state.activeTab === 'groups' ? 'active' : ''}" onclick="switchTab('groups')">
-                    <span>👥</span> <span class="nav-text">Группы</span>
+                    <span>👥</span> <span class="nav-text">${t('nav_groups')}</span>
                 </div>
                 <div class="nav-item ${state.activeTab === 'students' ? 'active' : ''}" onclick="switchTab('students')">
-                    <span>👨‍🎓</span> <span class="nav-text">Студенты</span>
+                    <span>👨‍🎓</span> <span class="nav-text">${t('nav_students')}</span>
                 </div>
                 <div class="nav-item ${state.activeTab === 'settings' ? 'active' : ''}" onclick="switchTab('settings')">
-                    <span>🔑</span> <span class="nav-text">Доступы</span>
+                    <span>🔑</span> <span class="nav-text">${t('nav_access')}</span>
                 </div>
                 ` : ''}
             </nav>
 
-            
-            <div class="mt-auto space-y-4">
-                <div class="bg-white/5 p-4 rounded-xl">
-                    <p class="text-[10px] text-text-muted mb-1 font-bold">ПОДДЕРЖКА</p>
+            <div class="mt-auto space-y-3">
+                <div class="lang-switcher-sidebar">
+                    <button onclick="changeLang('uz')" class="lang-btn ${currentLang === 'uz' ? 'lang-btn-active' : ''}">UZ</button>
+                    <button onclick="changeLang('ru')" class="lang-btn ${currentLang === 'ru' ? 'lang-btn-active' : ''}">RU</button>
+                </div>
+                <div class="bg-white/5 p-3 rounded-xl">
+                    <p class="text-[10px] text-text-muted mb-1 font-bold">${t('support_label')}</p>
                     <a href="https://nusra.uz" target="_blank" class="text-xs font-bold text-text-secondary hover:text-white transition-colors">
                         Powered by <span class="text-emerald-500">Nusra.uz</span>
                     </a>
                 </div>
                 <button id="logout-btn" class="nav-item w-full text-red-400 hover:text-red-300">
-                    <span>🚪</span> <span class="nav-text">Выйти</span>
+                    <span>🚪</span> <span class="nav-text">${t('nav_logout')}</span>
                 </button>
             </div>
         </aside>
@@ -378,45 +538,48 @@ function renderSidebar() {
 
 function renderMobileNav() {
     if (!state.user) return '';
-
-    // Показываем минимальный навигатор, если профиль еще грузится
     const isAdmin = state.profile && state.profile.role === 'admin';
 
     return `
         <div class="mobile-nav">
             <div class="mobile-nav-item ${state.activeTab === 'journal' ? 'active' : ''}" onclick="switchTab('journal')">
                 <span class="text-xl">📋</span>
-                <span>Журнал</span>
+                <span>${t('nav_journal')}</span>
             </div>
             ${isAdmin ? `
             <div class="mobile-nav-item ${state.activeTab === 'groups' ? 'active' : ''}" onclick="switchTab('groups')">
                 <span class="text-xl">👥</span>
-                <span>Группы</span>
+                <span>${t('nav_groups')}</span>
             </div>
             <div class="mobile-nav-item ${state.activeTab === 'students' ? 'active' : ''}" onclick="switchTab('students')">
                 <span class="text-xl">👨‍🎓</span>
-                <span>Студенты</span>
+                <span>${t('nav_students')}</span>
             </div>
             <div class="mobile-nav-item ${state.activeTab === 'settings' ? 'active' : ''}" onclick="switchTab('settings')">
                 <span class="text-xl">🔑</span>
-                <span>Доступы</span>
+                <span>${t('nav_access')}</span>
             </div>
             ` : ''}
-
+            <div class="mobile-nav-item" onclick="changeLang(currentLang === 'uz' ? 'ru' : 'uz')" style="color:var(--accent-primary)">
+                <span class="text-xl">🌐</span>
+                <span>${currentLang === 'uz' ? 'RU' : 'UZ'}</span>
+            </div>
             <div class="mobile-nav-item text-red-400" onclick="logout()">
                 <span class="text-xl">🚪</span>
-                <span>Выход</span>
+                <span>${t('nav_logout')}</span>
             </div>
         </div>
     `;
 }
 
-function renderHeader(title = 'Журнал посещаемости', subtitle = 'Управление отметками студентов') {
+function renderHeader(title, subtitle) {
+    const _title = title || t('journal_title');
+    const _subtitle = subtitle || t('journal_subtitle');
     return `
         <header class="journal-header animate-fade-in">
             <div>
-                <h1 class="text-3xl font-black mb-1">${title}</h1>
-                <p class="text-text-secondary text-sm">${subtitle}</p>
+                <h1 class="text-3xl font-black mb-1">${_title}</h1>
+                <p class="text-text-secondary text-sm">${_subtitle}</p>
             </div>
         </header>
         ${state.activeTab === 'journal' ? `
@@ -431,13 +594,12 @@ function renderHeader(title = 'Журнал посещаемости', subtitle 
                 </div>
                 ${state.profile && state.profile.role !== 'starosta' ? `
                 <select id="group-select" class="input-premium input-group-select">
-                    <option value="">— Выберите группу —</option>
+                    <option value="">${t('all_groups')}</option>
                     ${state.groups.map(g => `<option value="${g.id}" ${state.selectedGroupId === g.id ? 'selected' : ''}>${g.name}</option>`).join('')}
                 </select>
                 ` : ''}
             </div>
         </div>
-        <!-- Dropdown рендерится в body через JS -->
         ` : ''}
     `;
 }
@@ -455,11 +617,11 @@ window.toggleExportMenu = () => {
     menu.id = 'export-menu';
     menu.className = 'export-dropdown-fixed';
     menu.innerHTML = `
-        <div class="export-dropdown-title">Период экспорта</div>
-        <button onclick="exportToExcel('day')" class="export-dropdown-item">📅 Сегодня</button>
-        <button onclick="exportToExcel('week')" class="export-dropdown-item">📅 Неделя (7 дней)</button>
-        <button onclick="exportToExcel('month')" class="export-dropdown-item">📅 Месяц (30 дней)</button>
-        <button onclick="exportToExcel('halfyear')" class="export-dropdown-item">📅 6 месяцев</button>
+        <div class="export-dropdown-title">${t('excel_period')}</div>
+        <button onclick="exportToExcel('day')" class="export-dropdown-item">${t('excel_today')}</button>
+        <button onclick="exportToExcel('week')" class="export-dropdown-item">${t('excel_week')}</button>
+        <button onclick="exportToExcel('month')" class="export-dropdown-item">${t('excel_month')}</button>
+        <button onclick="exportToExcel('halfyear')" class="export-dropdown-item">${t('excel_halfyear')}</button>
     `;
     document.body.appendChild(menu);
 
@@ -888,10 +1050,10 @@ function renderJournal() {
         const mobileCards = state.students.map(student => {
             const att = state.attendance.find(a => a.student_id === student.id);
             const statusLabel = !att?.status ? '' :
-                att.status === 'present' ? '✅ Пришёл' :
-                    att.status === 'absent' ? '❌ Не пришёл' :
-                        att.status === 'excused' ? '⚠️ Уважительная' :
-                            att.status === 'late' ? '⏰ Пришёл (Опоздал)' : '🚶 Пришёл (Ушёл раньше)';
+                att.status === 'present' ? t('att_present') :
+                    att.status === 'absent' ? t('att_absent') :
+                        att.status === 'excused' ? t('att_excused') :
+                            att.status === 'late' ? t('att_late') : t('att_early');
             const statusColor = !att?.status ? '#64748b' :
                 (att.status === 'present' || att.status === 'late' || att.status === 'left_early') ? '#10b981' :
                     att.status === 'absent' ? '#ef4444' : '#f59e0b';
@@ -900,11 +1062,11 @@ function renderJournal() {
                     <div class="jc-card-header">
                         <div class="jc-card-info">
                             <p class="jc-card-name">${student.full_name}</p>
-                            <span class="jc-card-status" style="color:${statusColor}">${statusLabel || '— не отмечен —'}</span>
+                            <span class="jc-card-status" style="color:${statusColor}">${statusLabel || t('att_none')}</span>
                         </div>
                         <div class="jc-card-btns">
-                            <button onclick="openOptions('${student.id}')" class="jc-btn-opts" title="Детали">${att?.comment ? '📝' : '⋯'}</button>
-                            ${isAdmin ? `<button onclick="showConfirm('Удалить студента?', () => removeStudent('${student.id}'))" class="jc-btn-del">✕</button>` : ''}
+                            <button onclick="openOptions('${student.id}')" class="jc-btn-opts" title="${t('options_title')}">${att?.comment ? '📝' : '⋯'}</button>
+                            ${isAdmin ? `<button onclick="showConfirm('${t('delete_student_confirm')}', () => removeStudent('${student.id}'))" class="jc-btn-del">✕</button>` : ''}
                         </div>
                     </div>
                     ${renderStatusSelector(student.id, att?.status, true)}
@@ -937,10 +1099,10 @@ function renderJournal() {
                     <table class="premium-table">
                         <thead>
                             <tr>
-                                <th>ФИО Студента</th>
-                                <th>Статус</th>
-                                <th>Детали</th>
-                                ${isAdmin ? '<th>Удалить</th>' : ''}
+                                <th>${t('student_fio_label')}</th>
+                                <th>${t('options_status')}</th>
+                                <th>${t('options_title')}</th>
+                                ${isAdmin ? `<th>${t('btn_delete')}</th>` : ''}
                             </tr>
                         </thead>
                         <tbody>${desktopRows}</tbody>
@@ -950,10 +1112,10 @@ function renderJournal() {
 
             ${isAdmin || isTutor ? `
             <div class="glass glass-card add-student-card">
-                <p class="add-student-label">Добавить студента в текущую группу</p>
+                <p class="add-student-label">${t('add_student_label')}</p>
                 <div class="add-student-row">
-                    <input type="text" id="journal-student-name" placeholder="ФИО Студента" class="input-premium">
-                    <button onclick="addStudentJournal()" class="btn btn-primary">Добавить</button>
+                    <input type="text" id="journal-student-name" placeholder="${t('add_student_placeholder')}" class="input-premium">
+                    <button onclick="addStudentJournal()" class="btn btn-primary">${t('btn_add')}</button>
                 </div>
             </div>
             ` : ''}
@@ -994,29 +1156,25 @@ window.addStudentJournal = async () => {
 };
 
 function renderStatusSelector(studentId, currentStatus, isMobile = false) {
-    // late и left_early считаем как "Пришёл" с дополнительной пометкой
     const effectiveStatus = (currentStatus === 'late' || currentStatus === 'left_early') ? 'present' : currentStatus;
-    const detailBadge = currentStatus === 'late' ? ' (Опоздал)' : currentStatus === 'left_early' ? ' (Ушёл раньше)' : '';
+    const detailBadge = currentStatus === 'late' ? ` (${currentLang === 'uz' ? 'Kech' : 'Поздн.'})` :
+        currentStatus === 'left_early' ? ` (${currentLang === 'uz' ? 'Erta' : 'Рано'})` : '';
 
     const statuses = [
-        { id: 'present', label: 'Пришёл' + detailBadge, activeClass: 'bg-emerald-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.4)] border-transparent' },
-        { id: 'absent', label: 'Не пришёл', activeClass: 'bg-red-500 text-white shadow-[0_0_12px_rgba(239,68,68,0.4)] border-transparent' },
-        { id: 'excused', label: 'Уважительная', activeClass: 'bg-orange-500 text-white shadow-[0_0_12px_rgba(245,158,11,0.4)] border-transparent' }
+        { id: 'present', label: t('status_present') + detailBadge, activeClass: 'status-btn-present' },
+        { id: 'absent', label: t('status_absent'), activeClass: 'status-btn-absent' },
+        { id: 'excused', label: t('status_excused'), activeClass: 'status-btn-excused' }
     ];
 
     const isUpdating = state.updatingStatus === studentId;
-    const baseClass = `flex-1 py-3 px-2 rounded-xl font-bold text-[11px] uppercase tracking-wide transition-all border text-center cursor-pointer ${isMobile ? 'py-3.5' : 'py-2.5'}`;
-    const inactiveClass = 'bg-white/5 text-text-secondary border-white/10 hover:border-white/30 hover:bg-white/10';
-
     return `
-        <div class="flex gap-2 w-full ${isMobile ? '' : 'min-w-[280px]'}">
+        <div class="status-btn-row${isMobile ? ' status-btn-row--mobile' : ''}">
             ${statuses.map(s => {
         const isActive = effectiveStatus === s.id;
-        return `
-                <button 
+        return `<button
                     id="status-${studentId}-${s.id}"
                     onclick="updateStatus('${studentId}', '${s.id}')"
-                    class="${baseClass} ${isActive ? s.activeClass : inactiveClass} ${isUpdating ? 'opacity-50 pointer-events-none' : ''}"
+                    class="status-btn ${isActive ? s.activeClass : 'status-btn-inactive'} ${isUpdating ? 'status-btn-loading' : ''}"
                 >${s.label}</button>`;
     }).join('')}
         </div>
