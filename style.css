@@ -1312,3 +1312,113 @@ body.app-auth .lang-float {
 }
 
 
+
+/* ===== Final UI Overrides ===== */
+button {
+  font-family: var(--font-main);
+}
+
+/* Cleaner journal action buttons (remove browser default white style) */
+.row-option-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.42rem 0.72rem;
+  border-radius: 0.65rem;
+  border: 1px solid rgba(148, 163, 184, 0.34);
+  background: rgba(12, 25, 40, 0.72);
+  color: #cbd5e1;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.row-option-btn:hover {
+  color: #f8fafc;
+  border-color: rgba(16, 185, 129, 0.55);
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.row-delete-btn {
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(239, 68, 68, 0.42);
+  background: rgba(127, 29, 29, 0.2);
+  color: #f87171;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.row-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.22);
+  color: #fecaca;
+}
+
+/* Strong, clear status buttons */
+.status-btn-row {
+  gap: 0.45rem;
+}
+
+.status-btn {
+  min-height: 2.35rem;
+  padding: 0.7rem 0.45rem;
+  border-radius: 0.72rem;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  transition: transform 0.12s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.status-btn-inactive {
+  background: rgba(16, 30, 49, 0.82);
+  color: #9fb0c9;
+}
+
+.status-btn-inactive:hover {
+  background: rgba(24, 40, 64, 0.95);
+  color: #d7e1ef;
+  border-color: rgba(148, 163, 184, 0.4);
+}
+
+.status-btn-present {
+  background: linear-gradient(135deg, #16c58d, #0f9f76);
+  border-color: rgba(16, 185, 129, 0.68);
+  color: #f0fdfa;
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.26), 0 0 22px rgba(16, 185, 129, 0.38);
+}
+
+.status-btn-absent {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border-color: rgba(248, 113, 113, 0.68);
+  color: #fff1f2;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.24), 0 0 22px rgba(239, 68, 68, 0.32);
+}
+
+.status-btn-excused {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border-color: rgba(251, 191, 36, 0.68);
+  color: #fffbeb;
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.22), 0 0 22px rgba(245, 158, 11, 0.28);
+}
+
+.status-btn:active {
+  transform: scale(0.98);
+}
+
+/* Login language switch — centered and safe on all widths */
+body:not(.app-auth) .lang-float {
+  left: 50%;
+  right: auto;
+  top: 0.75rem;
+  transform: translateX(-50%);
+  max-width: calc(100vw - 1rem);
+}
+
+body:not(.app-auth) .lang-float-btn {
+  min-width: 56px;
+}

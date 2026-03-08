@@ -156,6 +156,10 @@ function isWeekendDate(dateStr) {
     return day === 0 || day === 6;
 }
 
+function normalizeStatus(status) {
+    return (status === 'late' || status === 'left_early') ? 'present' : status;
+}
+
 // Смена языка
 window.changeLang = (lang) => {
     currentLang = lang;
@@ -1097,12 +1101,12 @@ function renderJournal() {
                     <td class="font-bold">${student.full_name}</td>
                     <td>${renderStatusSelector(student.id, att?.status)}</td>
                     <td>
-                        <button onclick="openOptions('${student.id}')" class="text-text-secondary hover:text-text-primary transition-colors flex items-center gap-1 text-xs">
+                        <button onclick="openOptions('${student.id}')" class="row-option-btn">
                             <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM18 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                             ${att?.comment ? '📝' : currentLang === 'uz' ? 'Variantlar' : 'Опции'}
                         </button>
                     </td>
-                    ${isAdmin ? `<td><button onclick="showConfirm('${currentLang === 'uz' ? "Talabani o'chirish" : 'Удалить студента'} ${student.full_name}?', () => removeStudent('${student.id}'))" class="text-red-500 hover:text-red-400">✕</button></td>` : ''}
+                    ${isAdmin ? `<td><button onclick="showConfirm('${currentLang === 'uz' ? "Talabani o'chirish" : 'Удалить студента'} ${student.full_name}?', () => removeStudent('${student.id}'))" class="row-delete-btn">✕</button></td>` : ''}
                 </tr>
             `;
         }).join('');
@@ -1172,7 +1176,7 @@ window.addStudentJournal = async () => {
 };
 
 function renderStatusSelector(studentId, currentStatus, isMobile = false) {
-    const effectiveStatus = (currentStatus === 'late' || currentStatus === 'left_early') ? 'present' : currentStatus;
+    const effectiveStatus = normalizeStatus(currentStatus);
     const detailBadge = currentStatus === 'late' ? ` (${currentLang === 'uz' ? 'Kech' : 'Поздн.'})` :
         currentStatus === 'left_early' ? ` (${currentLang === 'uz' ? 'Erta' : 'Рано'})` : '';
     const weekendLocked = isWeekendDate(state.currentDate);
@@ -1201,7 +1205,9 @@ function renderStatusSelector(studentId, currentStatus, isMobile = false) {
 
 // Events
 function attachLoginEvents() {
-    document.getElementById('login-btn')?.addEventListener('click', () => {
+    const loginBtn = document.getElementById('login-btn');
+    if (!loginBtn) return;
+    loginBtn.onclick = () => {
         const username = document.getElementById('username').value.trim().toLowerCase();
         const password = document.getElementById('password').value;
 
@@ -1211,12 +1217,15 @@ function attachLoginEvents() {
         }
 
         login(username, password);
-    });
+    };
 }
 
 function attachAppEvents() {
-    document.getElementById('logout-btn')?.addEventListener('click', logout);
-    document.getElementById('date-picker')?.addEventListener('change', async (e) => {
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) logoutBtn.onclick = logout;
+
+    const datePicker = document.getElementById('date-picker');
+    if (datePicker) datePicker.onchange = async (e) => {
         state.currentDate = e.target.value;
         if (isWeekendDate(state.currentDate)) {
             showToast(currentLang === 'uz'
@@ -1225,12 +1234,14 @@ function attachAppEvents() {
         }
         await loadData();
         render(); // <-- Вот это вернет Журнал на экран
-    });
-    document.getElementById('group-select')?.addEventListener('change', async (e) => {
+    };
+
+    const groupSelect = document.getElementById('group-select');
+    if (groupSelect) groupSelect.onchange = async (e) => {
         state.selectedGroupId = e.target.value;
         await loadData();
         render(); // <-- Вот это вернет Журнал на экран
-    });
+    };
 }
 
 // Global functions for inline events
@@ -1242,6 +1253,9 @@ window.updateStatus = async (studentId, status) => {
             : "В субботу и воскресенье отмечать посещаемость нельзя", 'error');
         return;
     }
+
+    const existingStatus = state.attendance.find(a => a.student_id === studentId)?.status;
+    if (normalizeStatus(existingStatus) === status) return;
 
     state.updatingStatus = studentId;
     render();
@@ -1591,6 +1605,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log("DOM готов, запуск TDTrU Davomat...");
     init();
 });
+
 
 
 
