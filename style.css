@@ -1233,43 +1233,60 @@ header {
    ============================================= */
 .lang-float {
   position: fixed;
-  top: 0.85rem;
-  right: 0.85rem;
-  z-index: 99999;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1200;
   display: flex;
-  background: rgba(10, 15, 24, 0.92);
-  border: 1.5px solid rgba(16, 185, 129, 0.35);
-  border-radius: 2rem;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: rgba(10, 15, 24, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
   overflow: hidden;
-  backdrop-filter: blur(16px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.38);
 }
 
 .lang-float-btn {
-  padding: 0.5rem 1rem;
-  font-size: 0.75rem;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.5);
+  min-width: 48px;
+  height: 34px;
+  padding: 0 0.8rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.75);
   background: transparent;
   border: none;
+  border-radius: 999px;
   cursor: pointer;
   transition: all 0.18s ease;
 }
 
 .lang-float-btn:hover {
   color: white;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .lang-float-btn.active {
-  background: #10b981;
+  background: linear-gradient(135deg, #10b981, #059669);
   color: white;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
 }
 
-/* On desktop (sidebar visible), hide the floating button */
-@media (min-width: 769px) {
+body.app-auth .lang-float {
+  top: 0.9rem;
+}
+
+@media (max-width: 768px) {
   .lang-float {
-    display: none;
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+
+  .lang-float-btn {
+    min-width: 44px;
+    height: 32px;
+    padding: 0 0.7rem;
   }
 }

@@ -1,4 +1,4 @@
-// ==============================================
+﻿// ==============================================
 // INTERNATIONALIZATION (i18n)
 // ==============================================
 const TRANSLATIONS = {
@@ -221,7 +221,7 @@ window.showToast = (message, type = 'success') => {
     toast.innerHTML = `
         <span style="font-size: 1.25rem">${type === 'success' ? '✅' : '❌'}</span>
         <div class="flex flex-col">
-            <span class="font-bold">${type === 'success' ? 'Успешно' : 'Ошибка'}</span>
+            <span class="font-bold">${type === 'success' ? t('toast_success') : t('toast_error')}</span>
             <span class="text-xs opacity-90">${message}</span>
         </div>
     `;
@@ -239,11 +239,11 @@ window.showConfirm = (message, onConfirm) => {
         <div class="modal-overlay animate-fade-in" id="confirm-modal">
             <div class="glass glass-card max-w-sm w-full text-center">
                 <div class="text-4xl mb-4">🤔</div>
-                <h3 class="text-xl font-bold mb-2">Подтверждение</h3>
+                <h3 class="text-xl font-bold mb-2">${t('confirm_title')}</h3>
                 <p class="text-text-secondary text-sm mb-6">${message}</p>
                 <div class="flex gap-3">
-                    <button id="confirm-yes" class="btn btn-primary flex-1">Да, уверен</button>
-                    <button onclick="closeModal()" class="btn btn-secondary flex-1">Отмена</button>
+                    <button id="confirm-yes" class="btn btn-primary flex-1">${t('confirm_yes')}</button>
+                    <button onclick="closeModal()" class="btn btn-secondary flex-1">${t('confirm_cancel')}</button>
                 </div>
             </div>
         </div>
@@ -260,8 +260,8 @@ window.showConfirm = (message, onConfirm) => {
 
 async function init() {
     try {
-        console.log("Vedomost PRO: Запуск инициализации...");
-        state.loadingStep = 'Старт системы...';
+        console.log("TDTrU Davomat: Запуск инициализации...");
+        state.loadingStep = t('loading_start');
         state.error = null;
 
         const token = localStorage.getItem('token');
@@ -272,7 +272,7 @@ async function init() {
         }
     } catch (err) {
         console.error("Критическая ошибка при запуске:", err);
-        state.error = "Не удалось подключиться к серверу: " + err.message;
+        state.error = (currentLang === 'uz' ? "Serverga ulanish muvaffaqiyatsiz: " : "Не удалось подключиться к серверу: ") + err.message;
         state.user = null;
     } finally {
         state.loading = false;
@@ -282,7 +282,7 @@ async function init() {
 
 async function loadProfile() {
     state.loading = true;
-    state.loadingStep = 'Загрузка профиля...';
+    state.loadingStep = t('loading_profile');
     render();
 
     try {
@@ -310,7 +310,7 @@ async function loadProfile() {
 }
 
 async function loadData() {
-    state.loadingStep = 'Загрузка данных...';
+    state.loadingStep = t('loading_data');
     try {
         const isAdmin = state.profile?.role === 'admin';
         const isTutor = state.profile?.role === 'tutor';
@@ -368,9 +368,9 @@ async function login(username, password) {
         state.user = { id: data.profile.id };
         state.profile = data.profile;
         await loadProfile();
-        showToast('Вы успешно вошли!');
+        showToast(currentLang === 'uz' ? "Tizimga muvaffaqiyatli kirdingiz!" : 'Вы успешно вошли!');
     } catch (err) {
-        showToast('Ошибка входа: ' + err.message, 'error');
+        showToast((currentLang === 'uz' ? "Kirish xatosi: " : "Ошибка входа: ") + err.message, 'error');
     } finally {
         state.loading = false;
         render();
@@ -389,6 +389,7 @@ window.logout = async () => {
 function render() {
     const app = document.getElementById('app');
     const mobileNav = document.getElementById('mobile-nav-container');
+    document.body.classList.toggle('app-auth', !!state.user);
     // Update active state of floating lang buttons
     const uzBtn = document.getElementById('lang-float-uz');
     const ruBtn = document.getElementById('lang-float-ru');
@@ -426,16 +427,14 @@ function render() {
             ${state.loading ? `
                 <div class="fixed inset-0 z-[200] bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
                     <div class="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-6"></div>
-                    <p class="text-emerald-500 text-xl font-bold mb-2 animate-pulse">${state.loadingStep || 'Загрузка данных...'}</p>
-                    <p class="text-text-secondary text-sm mb-8 max-w-xs">
-                        Это может занять время при первом запуске или медленном соединении с сервером.
-                    </p>
+                    <p class="text-emerald-500 text-xl font-bold mb-2 animate-pulse">${state.loadingStep || t('loading_data')}</p>
+                    <p class="text-text-secondary text-sm mb-8 max-w-xs">${t('loading_wait')}</p>
                     <div class="flex flex-col gap-3 w-full max-w-xs">
                         <button onclick="state.loading=false; render();" class="btn btn-secondary w-full uppercase tracking-widest text-xs py-3">
-                            Продолжить без ожидания
+                            ${t('btn_continue')}
                         </button>
                         <button onclick="logout()" class="text-red-400 text-[10px] uppercase font-bold hover:text-red-300">
-                            Выйти и зайти заново
+                            ${t('btn_relogin')}
                         </button>
                     </div>
                 </div>
@@ -453,7 +452,7 @@ function renderLogin() {
         <div class="fixed inset-0 flex items-center justify-center p-4 bg-[#0a0f18]">
             <div class="glass glass-card max-w-sm w-full animate-fade-in">
                 <div class="text-center mb-8">
-                    <h1 class="text-3xl font-extrabold mb-2">Vedomost <span class="text-emerald-500">PRO</span></h1>
+                    <h1 class="text-3xl font-extrabold mb-2">TDTrU <span class="text-emerald-500">Davomat</span></h1>
                     <p class="text-text-secondary text-sm">${t('login_subtitle')}</p>
                 </div>
                 <div class="space-y-4">
@@ -499,7 +498,7 @@ function renderSidebar() {
     return `
         <aside class="sidebar glass">
             <div class="sidebar-brand">
-                <span class="sidebar-logo">Vedomost <span style="color:#10b981;">PRO</span></span>
+                <span class="sidebar-logo">TDTrU <span style="color:#10b981;">Davomat</span></span>
                 <div style="margin-top:0.25rem;display:flex;align-items:center;gap:0.5rem;">
                     <span style="font-size:0.65rem;color:#10b981;font-weight:800;text-transform:uppercase;letter-spacing:0.05em;">${roleLabel}</span>
                     <span style="font-size:0.6rem;background:rgba(16,185,129,0.15);color:#10b981;padding:0.1rem 0.4rem;border-radius:2rem;font-weight:900;border:1px solid rgba(16,185,129,0.3);">${t('version_label')}</span>
@@ -663,11 +662,11 @@ function renderGroups() {
     const isAdmin = state.profile?.role === 'admin';
     return `
         <div class="glass glass-card mb-8">
-            <h3 class="text-xl font-bold mb-6">Список групп</h3>
+            <h3 class="text-xl font-bold mb-6">${t('groups_title')}</h3>
             ${isAdmin ? `
             <div class="flex gap-4 mb-8 flex-header">
-                <input type="text" id="new-group-name" placeholder="Название новой группы (напр. 211-22)" class="input-premium">
-                <button onclick="createGroup()" class="btn btn-primary whitespace-nowrap">+ Создать группу</button>
+                <input type="text" id="new-group-name" placeholder="${t('create_group_placeholder')}" class="input-premium">
+                <button onclick="createGroup()" class="btn btn-primary whitespace-nowrap">${t('btn_create_group')}</button>
             </div>
             ` : ''}
             
@@ -679,21 +678,21 @@ function renderGroups() {
                         <div class="flex justify-between items-start mb-4">
                             <div>
                                 <h3 class="text-xl font-bold">${g.name}</h3>
-                                <p class="text-text-muted text-[10px]">Студентов: ${groupStudents.length}</p>
+                                <p class="text-text-muted text-[10px]">${currentLang === 'uz' ? 'Talabalar' : 'Студентов'}: ${groupStudents.length}</p>
                             </div>
                             <div class="flex gap-2">
-                                <button onclick="enterGroup('${g.id}')" class="text-xs text-emerald-500 font-bold hover:underline">Открыть Журнал</button>
+                                <button onclick="enterGroup('${g.id}')" class="text-xs text-emerald-500 font-bold hover:underline">${t('btn_open_journal')}</button>
                                 ${isAdmin ? `
-                                <button onclick="showConfirm('Удалить группу ${g.name}?', () => deleteGroup('${g.id}'))" class="text-xs text-red-500 font-bold hover:underline">Удалить</button>
+                                <button onclick="showConfirm('${t('delete_group_confirm')}', () => deleteGroup('${g.id}'))" class="text-xs text-red-500 font-bold hover:underline">${t('btn_delete')}</button>
                                 ` : ''}
                             </div>
                         </div>
 
                         ${isAdmin ? `
                         <div class="mt-4 pt-4 border-t border-white/5">
-                            <p class="text-[10px] font-bold text-text-muted uppercase mb-3 text-emerald-500">Добавить студента</p>
+                            <p class="text-[10px] font-bold text-text-muted uppercase mb-3 text-emerald-500">${t('add_student_to_group')}</p>
                             <div class="flex gap-2">
-                                <input type="text" id="student-name-${g.id}" placeholder="ФИО Студента" class="input-premium text-sm py-2">
+                                <input type="text" id="student-name-${g.id}" placeholder="${t('student_fio_placeholder')}" class="input-premium text-sm py-2">
                                 <button onclick="addStudent('${g.id}')" class="btn btn-primary py-2 px-4 shadow-none">+</button>
                             </div>
                             
@@ -701,9 +700,9 @@ function renderGroups() {
                                 ${groupStudents.length > 0 ? groupStudents.map(s => `
                                     <div class="flex justify-between items-center p-2 bg-white/5 rounded-lg text-sm border border-white/5">
                                         <span class="truncate">${s.full_name}</span>
-                                        <button onclick="showConfirm('Удалить ${s.full_name}?', () => removeStudent('${s.id}'))" class="text-red-400 hover:text-red-300 text-xs">✕</button>
+                                        <button onclick="showConfirm('${t('delete_student_confirm')}', () => removeStudent('${s.id}'))" class="text-red-400 hover:text-red-300 text-xs">✕</button>
                                     </div>
-                                `).join('') : '<p class="text-[10px] text-text-muted italic">В группе нет студентов</p>'}
+                                `).join('') : `<p class="text-[10px] text-text-muted italic">${t('no_students_in_group')}</p>`}
                             </div>
                         </div>
                         ` : ''}
@@ -715,52 +714,52 @@ function renderGroups() {
 }
 
 function renderStudentsTab() {
-    if (state.profile?.role !== 'admin') return '<div class="p-10 text-center">Доступ запрещен</div>';
+    if (state.profile?.role !== 'admin') return `<div class="p-10 text-center">${currentLang === 'uz' ? 'Kirish taqiqlangan' : 'Доступ запрещен'}</div>`;
 
     return `
         <div class="glass glass-card mb-8">
-            <h3 class="text-xl font-bold mb-6">Добавить студента</h3>
+            <h3 class="text-xl font-bold mb-6">${t('students_title')}</h3>
             <div class="flex gap-4 flex-header items-end">
                 <div class="flex-1">
-                    <label class="text-[10px] font-bold text-text-muted uppercase">ФИО Студента</label>
-                    <input type="text" id="new-student-name" placeholder="Фамилия Имя Отчество" class="input-premium mt-1">
+                    <label class="text-[10px] font-bold text-text-muted uppercase">${t('student_fio_label')}</label>
+                    <input type="text" id="new-student-name" placeholder="${t('student_fio_placeholder')}" class="input-premium mt-1">
                 </div>
                 <div class="flex-1">
-                    <label class="text-[10px] font-bold text-text-muted uppercase">Группа</label>
+                    <label class="text-[10px] font-bold text-text-muted uppercase">${t('group_label')}</label>
                     <select id="new-student-group" class="input-premium mt-1">
-                        <option value="">— Выберите группу —</option>
+                        <option value="">${t('group_placeholder')}</option>
                         ${state.groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('')}
                     </select>
                 </div>
-                <button onclick="addStudentGlobal()" class="btn btn-primary px-10">Добавить Студента</button>
+                <button onclick="addStudentGlobal()" class="btn btn-primary px-10">${t('btn_add_student')}</button>
             </div>
         </div>
 
         <div class="glass glass-card">
-            <h3 class="text-xl font-bold mb-6">Все студенты</h3>
+            <h3 class="text-xl font-bold mb-6">${t('students_all_title')}</h3>
             <div class="overflow-x-auto">
                 <table class="premium-table">
                     <thead>
                         <tr>
-                            <th>ФИО Студента</th>
-                            <th>Группа</th>
-                            <th>Действия</th>
+                            <th>${t('student_fio_label')}</th>
+                            <th>${t('group_label')}</th>
+                            <th>${t('btn_delete')}</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${state.allStudents.length > 0 ? state.allStudents.map(s => {
-        const groupName = state.groups.find(g => g.id === s.group_id)?.name || 'Неизвестно';
+        const groupName = state.groups.find(g => g.id === s.group_id)?.name || '—';
         return `
                             <tr>
                                 <td class="font-bold">${s.full_name}</td>
                                 <td><span class="badge badge-present">${groupName}</span></td>
                                 <td>
-                                    <button onclick="showConfirm('Удалить студента ${s.full_name}?', () => removeStudent('${s.id}'))" 
-                                            class="text-red-400 hover:text-red-300 font-bold text-xs">Удалить</button>
+                                    <button onclick="showConfirm('${t('delete_student_confirm')}', () => removeStudent('${s.id}'))" 
+                                            class="text-red-400 hover:text-red-300 font-bold text-xs">${t('btn_delete')}</button>
                                 </td>
                             </tr>
                             `;
-    }).join('') : '<tr><td colspan="3" class="text-center py-10 opacity-50">Студентов пока нет</td></tr>'}
+    }).join('') : `<tr><td colspan="3" class="text-center py-10 opacity-50">${currentLang === 'uz' ? 'Hali talabalar yoq' : 'Студентов пока нет'}</td></tr>`}
                     </tbody>
                 </table>
             </div>
@@ -771,14 +770,14 @@ function renderStudentsTab() {
 window.createGroup = async () => {
     const name = document.getElementById('new-group-name').value;
     if (!name) {
-        showToast("Введите название группы", 'error');
+        showToast(currentLang === 'uz' ? "Guruh nomini kiriting" : "Введите название группы", 'error');
         return;
     }
     state.loading = true;
     render();
     try {
         await apiClient.post('/api/groups', { name });
-        showToast('Группа успешно создана!');
+        showToast(currentLang === 'uz' ? "Guruh muvaffaqiyatli yaratildi" : 'Группа успешно создана!');
         await loadProfile();
     } catch (err) {
         showToast(err.message, 'error');
@@ -800,7 +799,7 @@ window.addStudent = async (groupId) => {
     const fullName = input.value;
 
     if (!fullName) {
-        showToast("Введите ФИО студента", 'error');
+        showToast(currentLang === 'uz' ? "Talaba F.I.O.sini kiriting" : "Введите ФИО студента", 'error');
         return;
     }
 
@@ -809,7 +808,7 @@ window.addStudent = async (groupId) => {
 
     try {
         await apiClient.post('/api/students', { full_name: fullName, group_id: groupId });
-        showToast("Студент успешно добавлен");
+        showToast(currentLang === 'uz' ? "Talaba muvaffaqiyatli qo'shildi" : "Студент успешно добавлен");
         input.value = '';
         await loadData();
     } catch (err) {
@@ -825,7 +824,7 @@ window.addStudentGlobal = async () => {
     const groupId = document.getElementById('new-student-group').value;
 
     if (!fullName || !groupId) {
-        showToast("Заполните ФИО и выберите группу", 'error');
+        showToast(currentLang === 'uz' ? "F.I.O. va guruhni to'ldiring" : "Заполните ФИО и выберите группу", 'error');
         return;
     }
 
@@ -834,7 +833,7 @@ window.addStudentGlobal = async () => {
 
     try {
         await apiClient.post('/api/students', { full_name: fullName, group_id: groupId });
-        showToast("Студент успешно добавлен");
+        showToast(currentLang === 'uz' ? "Talaba muvaffaqiyatli qo'shildi" : "Студент успешно добавлен");
         document.getElementById('new-student-name').value = '';
         await loadData();
     } catch (err) {
@@ -850,7 +849,7 @@ window.removeStudent = async (id) => {
     render();
     try {
         await apiClient.delete('/api/students/' + id);
-        showToast("Студент удален");
+        showToast(currentLang === 'uz' ? "Talaba o'chirildi" : "Студент удален");
         await loadData();
     } catch (err) {
         showToast(err.message, 'error');
@@ -862,69 +861,70 @@ window.removeStudent = async (id) => {
 
 
 function renderSettings() {
+    const roles = t('roles');
     return `
         <div class="glass glass-card mb-8">
-            <h3 class="text-xl font-bold mb-6">Создать нового пользователя</h3>
+            <h3 class="text-xl font-bold mb-6">${t('users_title')}</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
                 <div>
-                    <label class="text-[10px] font-bold text-text-muted uppercase">ФИО</label>
-                    <input type="text" id="reg-name" placeholder="Иван Иванов" class="input-premium mt-1">
+                    <label class="text-[10px] font-bold text-text-muted uppercase">${t('field_fio')}</label>
+                    <input type="text" id="reg-name" placeholder="${t('fio_placeholder')}" class="input-premium mt-1">
                 </div>
                 <div>
-                    <label class="text-[10px] font-bold text-text-muted uppercase">Логин</label>
-                    <input type="text" id="reg-username" placeholder="Только латиница и цифры" class="input-premium mt-1">
+                    <label class="text-[10px] font-bold text-text-muted uppercase">${t('field_login')}</label>
+                    <input type="text" id="reg-username" placeholder="${t('login_placeholder')}" class="input-premium mt-1">
                 </div>
                 <div>
-                    <label class="text-[10px] font-bold text-text-muted uppercase">Пароль</label>
-                    <input type="password" id="reg-password" placeholder="******" class="input-premium mt-1">
+                    <label class="text-[10px] font-bold text-text-muted uppercase">${t('field_password')}</label>
+                    <input type="password" id="reg-password" placeholder="${t('password_placeholder')}" class="input-premium mt-1">
                 </div>
                 <div>
-                    <label class="text-[10px] font-bold text-text-muted uppercase">Роль</label>
+                    <label class="text-[10px] font-bold text-text-muted uppercase">${t('field_role')}</label>
                     <select id="reg-role" class="input-premium mt-1" onchange="toggleRegGroup()">
-                        <option value="starosta">Староста</option>
-                        <option value="tutor">Тютор</option>
+                        <option value="starosta">${t('role_starosta')}</option>
+                        <option value="tutor">${t('role_tutor')}</option>
                     </select>
                 </div>
                 <div id="reg-group-container">
-                    <label class="text-[10px] font-bold text-text-muted uppercase">Группа</label>
+                    <label class="text-[10px] font-bold text-text-muted uppercase">${t('field_group')}</label>
                     <select id="reg-group" class="input-premium mt-1">
-                        <option value="">— Выберите группу —</option>
+                        <option value="">${t('group_placeholder')}</option>
                         ${state.groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('')}
                     </select>
                 </div>
                 <div class="md:col-span-2 lg:col-span-5 mt-2">
-                    <button onclick="createNewUser()" class="btn btn-primary w-full lg:w-auto px-10">Создать аккаунт</button>
+                    <button onclick="createNewUser()" class="btn btn-primary w-full lg:w-auto px-10">${t('btn_create_account')}</button>
                 </div>
             </div>
         </div>
 
         <div class="glass glass-card">
-            <h3 class="text-xl font-bold mb-6">Существующие пользователи</h3>
+            <h3 class="text-xl font-bold mb-6">${t('users_existing')}</h3>
             <div class="overflow-x-auto">
                 <table class="premium-table">
                     <thead>
                         <tr>
-                            <th>ФИО</th>
-                            <th>Роль</th>
-                            <th>Группа</th>
-                            <th>Действия</th>
+                            <th>${t('field_fio')}</th>
+                            <th>${t('field_role')}</th>
+                            <th>${t('field_group')}</th>
+                            <th>${t('btn_delete')}</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${state.allProfiles.length > 0 ? state.allProfiles.map(p => {
         const groupName = state.groups.find(g => g.id === p.group_id)?.name || '—';
-        const roleMap = { admin: 'Админ', tutor: 'Тютор', starosta: 'Староста' };
+        const roleLabel = roles[p.role] || p.role;
         return `
                             <tr>
                                 <td class="font-bold">${p.full_name}</td>
-                                <td><span class="badge badge-${p.role === 'admin' ? 'present' : 'excused'}">${roleMap[p.role]}</span></td>
+                                <td><span class="badge badge-${p.role === 'admin' ? 'present' : 'excused'}">${roleLabel}</span></td>
                                 <td>${groupName}</td>
                                 <td>
-                                    <button onclick="editUserProfile('${p.id}')" class="text-accent-primary hover:underline text-xs mr-3">Изменить</button>
+                                    <button onclick="editUserProfile('${p.id}')" class="text-accent-primary hover:underline text-xs mr-3">${t('edit_user')}</button>
                                 </td>
                             </tr>
                             `;
-    }).join('') : '<tr><td colspan="4" class="text-center py-6 opacity-30">Пользователей нет</td></tr>'}
+    }).join('') : `<tr><td colspan="4" class="text-center py-6 opacity-30">${currentLang === 'uz' ? 'Foydalanuvchilar yoq' : 'Пользователей нет'}</td></tr>`}
                     </tbody>
                 </table>
             </div>
@@ -941,17 +941,17 @@ window.createNewUser = async () => {
     const group_id = role === 'starosta' ? document.getElementById('reg-group').value : null;
 
     if (!full_name || !username || !password) {
-        showToast("Заполните ФИО, Логин и Пароль", 'error');
+        showToast(currentLang === 'uz' ? "F.I.O., Login va Parolni to'ldiring" : "Заполните ФИО, Логин и Пароль", 'error');
         return;
     }
 
     if (/[^a-z0-9_.-]/.test(username)) {
-        showToast("Логин должен содержать только английские буквы и цифры", "error");
+        showToast(currentLang === 'uz' ? "Login faqat lotin harflari va raqamlardan iborat bo'lishi kerak" : "Логин должен содержать только английские буквы и цифры", "error");
         return;
     }
 
     if (role === 'starosta' && !group_id) {
-        showToast("Для старосты нужно выбрать группу", 'error');
+        showToast(currentLang === 'uz' ? "Starosta uchun guruh tanlash kerak" : "Для старосты нужно выбрать группу", 'error');
         return;
     }
 
@@ -960,7 +960,7 @@ window.createNewUser = async () => {
 
     try {
         await apiClient.post('/api/admin/users', { username, password, full_name, role, group_id });
-        showToast(`Аккаунт для ${full_name} создан!`);
+        showToast((currentLang === 'uz' ? `Akkaunt yaratildi: ${full_name}` : `Аккаунт для ${full_name} создан!`));
         document.getElementById('reg-name').value = '';
         document.getElementById('reg-username').value = '';
         document.getElementById('reg-password').value = '';
@@ -969,7 +969,7 @@ window.createNewUser = async () => {
         await loadUsers();
     } catch (err) {
         console.error("Create user error:", err);
-        showToast("Ошибка: " + err.message, 'error');
+        showToast((currentLang === 'uz' ? "Xatolik: " : "Ошибка: ") + err.message, 'error');
     } finally {
         state.loading = false;
         render();
@@ -987,25 +987,25 @@ async function loadUsers() {
                 <table class="premium-table">
                     <thead>
                         <tr>
-                            <th>Пользователь</th>
-                            <th>Роль</th>
-                            <th>Группа</th>
-                            <th>Действия</th>
+                            <th>${currentLang === 'uz' ? 'Foydalanuvchi' : 'Пользователь'}</th>
+                            <th>${currentLang === 'uz' ? 'Rol' : 'Роль'}</th>
+                            <th>${currentLang === 'uz' ? 'Guruh' : 'Группа'}</th>
+                            <th>${currentLang === 'uz' ? 'Amallar' : 'Действия'}</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${profiles.map(p => `
                             <tr>
                                 <td>
-                                    <div class="font-bold">${p.full_name || 'Без имени'}</div>
+                                    <div class="font-bold">${p.full_name || (currentLang === 'uz' ? 'Ismsiz' : 'Без имени')}</div>
                                     <div class="text-[10px] text-text-muted">${p.id}</div>
                                 </td>
                                 <td><span class="badge ${p.role === 'admin' ? 'badge-present' : 'badge-excused'}">${p.role}</span></td>
                                 <td>${p.group_name || '—'}</td>
                                 <td>
                                     <div class="flex gap-3 items-center">
-                                        <button onclick="editUserProfile('${p.id}')" class="btn btn-secondary py-1 px-3 text-xs">Изменить</button>
-                                        <button onclick="deleteUserAdmin('${p.id}', '${p.full_name}')" class="text-red-400 hover:text-red-300 text-xs font-bold uppercase tracking-wider">Удалить</button>
+                                        <button onclick="editUserProfile('${p.id}')" class="btn btn-secondary py-1 px-3 text-xs">${currentLang === 'uz' ? "O'zgartirish" : 'Изменить'}</button>
+                                        <button onclick="deleteUserAdmin('${p.id}', '${p.full_name}')" class="text-red-400 hover:text-red-300 text-xs font-bold uppercase tracking-wider">${currentLang === 'uz' ? "O'chirish" : 'Удалить'}</button>
                                     </div>
                                 </td>
                             </tr>
@@ -1016,7 +1016,7 @@ async function loadUsers() {
         `;
     } catch (err) {
         const container = document.getElementById('users-list-container');
-        if (container) container.innerHTML = `<div class="text-red-400">Ошибка: ${err.message}</div>`;
+        if (container) container.innerHTML = `<div class="text-red-400">${currentLang === 'uz' ? 'Xatolik' : 'Ошибка'}: ${err.message}</div>`;
     }
 }
 
@@ -1031,17 +1031,17 @@ function renderJournal() {
     let content = '';
 
     if (!isGroupSelected) {
-        content = `<div class="glass glass-card text-center py-20 text-text-muted">Выберите группу для отображения журнала</div>`;
+        content = `<div class="glass glass-card text-center py-20 text-text-muted">${t('select_group_prompt')}</div>`;
     } else if (!hasStudents) {
         content = `
             <div class="glass glass-card text-center py-10">
-                <p class="text-text-muted mb-6">В этой группе пока нет студентов</p>
+                <p class="text-text-muted mb-6">${t('no_students')}</p>
                 ${isAdmin ? `
                 <div class="max-w-md mx-auto">
-                    <p class="text-[10px] font-bold text-text-muted uppercase mb-3 text-emerald-500 text-left">Быстрое добавление студента</p>
+                    <p class="text-[10px] font-bold text-text-muted uppercase mb-3 text-emerald-500 text-left">${t('quick_add')}</p>
                     <div class="flex gap-2">
-                        <input type="text" id="journal-student-name" placeholder="ФИО Студента" class="input-premium text-sm py-2">
-                        <button onclick="addStudentJournal()" class="btn btn-primary py-2 px-6">Добавить</button>
+                        <input type="text" id="journal-student-name" placeholder="${t('add_student_placeholder')}" class="input-premium text-sm py-2">
+                        <button onclick="addStudentJournal()" class="btn btn-primary py-2 px-6">${t('btn_add')}</button>
                     </div>
                 </div>
                 ` : ''}
@@ -1085,10 +1085,10 @@ function renderJournal() {
                     <td>
                         <button onclick="openOptions('${student.id}')" class="text-text-secondary hover:text-text-primary transition-colors flex items-center gap-1 text-xs">
                             <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM18 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                            ${att?.comment ? '📝' : 'Опции'}
+                            ${att?.comment ? '📝' : currentLang === 'uz' ? 'Variantlar' : 'Опции'}
                         </button>
                     </td>
-                    ${isAdmin ? `<td><button onclick="showConfirm('Удалить студента ${student.full_name}?', () => removeStudent('${student.id}'))" class="text-red-500 hover:text-red-400">✕</button></td>` : ''}
+                    ${isAdmin ? `<td><button onclick="showConfirm('${currentLang === 'uz' ? "Talabani o'chirish" : 'Удалить студента'} ${student.full_name}?', () => removeStudent('${student.id}'))" class="text-red-500 hover:text-red-400">✕</button></td>` : ''}
                 </tr>
             `;
         }).join('');
@@ -1133,12 +1133,12 @@ window.addStudentJournal = async () => {
     const name = document.getElementById('journal-student-name').value;
 
     if (!groupId) {
-        showToast("Пожалуйста, сначала выберите конкретную группу в списке сверху!", 'error');
+        showToast(currentLang === 'uz' ? "Avval ro'yxatda guruhni belgilang!" : "Пожалуйста, сначала выберите конкретную группу в списке сверху!", 'error');
         return;
     }
 
     if (!name) {
-        showToast("Введите ФИО студента", 'error');
+        showToast(currentLang === 'uz' ? "Talaba F.I.O.sini kiriting" : "Введите ФИО студента", 'error');
         return;
     }
 
@@ -1147,7 +1147,7 @@ window.addStudentJournal = async () => {
 
     try {
         await apiClient.post('/api/students', { full_name: name, group_id: groupId });
-        showToast("Студент успешно добавлен в группу");
+        showToast(currentLang === 'uz' ? "Talaba guruhga muvaffaqiyatli qo'shildi" : "Студент успешно добавлен в группу");
         await loadData(); // Обновляем список студентов
     } catch (err) {
         showToast(err.message, 'error');
@@ -1190,7 +1190,7 @@ function attachLoginEvents() {
         const password = document.getElementById('password').value;
 
         if (!username || !password) {
-            showToast("Введите логин и пароль", "error");
+            showToast(currentLang === 'uz' ? "Login va parolni kiriting" : "Введите логин и пароль", "error");
             return;
         }
 
@@ -1224,7 +1224,7 @@ window.updateStatus = async (studentId, status) => {
         await apiClient.post('/api/attendance', { student_id: studentId, group_id: groupId, status, date: state.currentDate });
         await loadData();
     } catch (err) {
-        showToast('Ошибка: ' + err.message, 'error');
+        showToast((currentLang === 'uz' ? 'Xatolik: ' : 'Ошибка: ') + err.message, 'error');
     } finally {
         state.updatingStatus = null;
         render();
@@ -1238,25 +1238,25 @@ window.openOptions = (studentId) => {
     const modalHtml = `
         <div class="modal-overlay animate-fade-in" id="options-modal">
             <div class="glass glass-card min-w-[400px]">
-                <h3 class="text-xl font-bold mb-4">Детали посещаемости: ${student.full_name}</h3>
+                <h3 class="text-xl font-bold mb-4">${t('options_title')}: ${student.full_name}</h3>
                 <div class="space-y-4">
                     <div>
-                        <label class="text-xs font-bold text-text-muted uppercase">Статус</label>
+                        <label class="text-xs font-bold text-text-muted uppercase">${t('options_status')}</label>
                         <select id="modal-status" class="input-premium mt-1">
-                            <option value="present" ${existing?.status === 'present' ? 'selected' : ''}>Присутствует</option>
-                            <option value="absent" ${existing?.status === 'absent' ? 'selected' : ''}>Отсутствует</option>
-                            <option value="excused" ${existing?.status === 'excused' ? 'selected' : ''}>Уважительная</option>
-                            <option value="late" ${existing?.status === 'late' ? 'selected' : ''}>Опоздал</option>
-                            <option value="left_early" ${existing?.status === 'left_early' ? 'selected' : ''}>Ушел раньше</option>
+                            <option value="present" ${existing?.status === 'present' ? 'selected' : ''}>${t('opt_present')}</option>
+                            <option value="absent" ${existing?.status === 'absent' ? 'selected' : ''}>${t('opt_absent')}</option>
+                            <option value="excused" ${existing?.status === 'excused' ? 'selected' : ''}>${t('opt_excused')}</option>
+                            <option value="late" ${existing?.status === 'late' ? 'selected' : ''}>${t('opt_late')}</option>
+                            <option value="left_early" ${existing?.status === 'left_early' ? 'selected' : ''}>${t('opt_early')}</option>
                         </select>
                     </div>
                     <div>
-                        <label class="text-xs font-bold text-text-muted uppercase">Причина / Комментарий</label>
-                        <textarea id="modal-comment" class="input-premium mt-1 h-24" placeholder="Напишите причину...">${existing?.comment || ''}</textarea>
+                        <label class="text-xs font-bold text-text-muted uppercase">${t('options_comment')}</label>
+                        <textarea id="modal-comment" class="input-premium mt-1 h-24" placeholder="${t('options_comment_placeholder')}">${existing?.comment || ''}</textarea>
                     </div>
                     <div class="flex gap-2 pt-4">
-                        <button onclick="saveOptions('${studentId}')" class="btn btn-primary flex-1">Сохранить</button>
-                        <button onclick="closeModal()" class="btn btn-secondary flex-1">Отмена</button>
+                        <button onclick="saveOptions('${studentId}')" class="btn btn-primary flex-1">${t('btn_save')}</button>
+                        <button onclick="closeModal()" class="btn btn-secondary flex-1">${t('btn_cancel')}</button>
                     </div>
                 </div>
             </div>
@@ -1275,7 +1275,7 @@ window.saveOptions = async (studentId) => {
         closeModal();
         await loadData();
     } catch (err) {
-        showToast('Ошибка: ' + err.message, 'error');
+        showToast((currentLang === 'uz' ? 'Xatolik: ' : 'Ошибка: ') + err.message, 'error');
     }
 };
 
@@ -1294,44 +1294,44 @@ window.editUserProfile = async (userId) => {
         <div class="modal-overlay animate-fade-in" id="user-modal">
             <div class="glass glass-card min-w-[400px]">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-xl font-bold">Настройки пользователя</h3>
-                    <button onclick="deleteUserAdmin('${userId}', '${profile.full_name}')" class="text-xs bg-red-500/10 text-red-500 px-2 py-1 rounded hover:bg-red-500/20">Удалить аккаунт</button>
+                    <h3 class="text-xl font-bold">${t('user_settings')}</h3>
+                    <button onclick="deleteUserAdmin('${userId}', '${profile.full_name}')" class="text-xs bg-red-500/10 text-red-500 px-2 py-1 rounded hover:bg-red-500/20">${t('delete_user')}</button>
                 </div>
                 <div class="space-y-4">
                     <div>
-                        <label class="text-xs font-bold text-text-muted uppercase">Полное имя</label>
+                        <label class="text-xs font-bold text-text-muted uppercase">${t('field_fio')}</label>
                         <input id="edit-full-name" type="text" value="${profile.full_name || ''}" class="input-premium mt-1">
                     </div>
                     <div class="flex gap-2">
                         <div class="flex-1">
-                            <label class="text-xs font-bold text-text-muted uppercase">Новый Логин</label>
-                            <input id="edit-username" type="text" placeholder="Оставьте пустым, если не меняете" class="input-premium mt-1 text-sm">
+                            <label class="text-xs font-bold text-text-muted uppercase">${t('new_login')}</label>
+                            <input id="edit-username" type="text" placeholder="${t('leave_empty')}" class="input-premium mt-1 text-sm">
                         </div>
                         <div class="flex-1">
-                            <label class="text-xs font-bold text-text-muted uppercase">Новый Пароль</label>
-                            <input id="edit-password" type="text" placeholder="Оставьте пустым..." class="input-premium mt-1 text-sm">
+                            <label class="text-xs font-bold text-text-muted uppercase">${t('new_password')}</label>
+                            <input id="edit-password" type="text" placeholder="${t('leave_empty')}" class="input-premium mt-1 text-sm">
                         </div>
                     </div>
                     <div class="flex gap-2">
                         <div class="flex-1">
-                            <label class="text-xs font-bold text-text-muted uppercase">Роль</label>
+                            <label class="text-xs font-bold text-text-muted uppercase">${t('field_role')}</label>
                             <select id="edit-role" class="input-premium mt-1">
-                                <option value="admin" ${profile.role === 'admin' ? 'selected' : ''}>Админ</option>
-                                <option value="tutor" ${profile.role === 'tutor' ? 'selected' : ''}>Тютор</option>
-                                <option value="starosta" ${profile.role === 'starosta' ? 'selected' : ''}>Староста</option>
+                                <option value="admin" ${profile.role === 'admin' ? 'selected' : ''}>${t('role_admin')}</option>
+                                <option value="tutor" ${profile.role === 'tutor' ? 'selected' : ''}>${t('role_tutor')}</option>
+                                <option value="starosta" ${profile.role === 'starosta' ? 'selected' : ''}>${t('role_starosta')}</option>
                             </select>
                         </div>
                         <div class="flex-1">
-                            <label class="text-xs font-bold text-text-muted uppercase">Группа</label>
+                            <label class="text-xs font-bold text-text-muted uppercase">${t('field_group')}</label>
                             <select id="edit-group-id" class="input-premium mt-1">
-                                <option value="">— Нет группы —</option>
+                                <option value="">${t('no_group')}</option>
                                 ${state.groups.map(g => `<option value="${g.id}" ${profile.group_id === g.id ? 'selected' : ''}>${g.name}</option>`).join('')}
                             </select>
                         </div>
                     </div>
                     <div class="flex gap-2 pt-4">
-                        <button onclick="saveUserProfile('${userId}')" class="btn btn-primary flex-1">Сохранить</button>
-                        <button onclick="closeModal()" class="btn btn-secondary flex-1">Отмена</button>
+                        <button onclick="saveUserProfile('${userId}')" class="btn btn-primary flex-1">${t('btn_update_account')}</button>
+                        <button onclick="closeModal()" class="btn btn-secondary flex-1">${t('btn_cancel')}</button>
                     </div>
                 </div>
             </div>
@@ -1352,11 +1352,11 @@ window.saveUserProfile = async (userId) => {
     render();
 
     try {
-        if (username && /[^a-z0-9_.-]/.test(username)) throw new Error("Логин должен содержать только английские буквы и цифры");
+        if (username && /[^a-z0-9_.-]/.test(username)) throw new Error(currentLang === 'uz' ? "Login faqat lotin harflari va raqamlardan iborat bo'lishi kerak" : "Логин должен содержать только английские буквы и цифры");
 
         await apiClient.patch('/api/admin/users/' + userId, { full_name, role, group_id, username, password });
 
-        showToast("Пользователь успешно обновлен!");
+        showToast(currentLang === 'uz' ? "Foydalanuvchi muvaffaqiyatli yangilandi!" : "Пользователь успешно обновлен!");
         closeModal();
         await loadData();
         render();
@@ -1370,12 +1370,12 @@ window.saveUserProfile = async (userId) => {
 };
 
 window.deleteUserAdmin = (userId, userName) => {
-    showConfirm(`Вы уверены, что хотите НАВСЕГДА удалить пользователя ${userName}? Это действие нельзя отменить.`, async () => {
+    showConfirm(`${t('delete_user_confirm')} ${userName}?`, async () => {
         state.loading = true;
         render();
         try {
             await apiClient.delete('/api/admin/users/' + userId);
-            showToast("Пользователь удален!");
+            showToast(currentLang === 'uz' ? "Foydalanuvchi o'chirildi!" : "Пользователь удален!");
             closeModal();
             await loadData();
             render();
@@ -1389,10 +1389,10 @@ window.deleteUserAdmin = (userId, userName) => {
 };
 
 window.deleteGroup = (groupId) => {
-    showConfirm(`Удалить группу и всех студентов в ней?`, async () => {
+    showConfirm(t('delete_group_confirm'), async () => {
         try {
             await apiClient.delete('/api/groups/' + groupId);
-            showToast("Группа удалена");
+            showToast(currentLang === 'uz' ? "Guruh o'chirildi" : "Группа удалена");
             await loadData();
             await loadProfile();
         } catch (err) {
@@ -1419,119 +1419,145 @@ window.toggleRegGroup = () => {
 };
 
 window.exportToExcel = async (period = 'day') => {
-    // Close the dropdown menu
     document.getElementById('export-menu')?.remove();
 
     if (!state.students || state.students.length === 0) {
-        showToast('Нет данных для экспорта', 'error');
+        showToast(currentLang === 'uz' ? "Eksport uchun ma'lumot yo'q" : 'Нет данных для экспорта', 'error');
         return;
     }
 
-    const isTutor = state.profile?.role === 'tutor' || state.profile?.role === 'admin';
     const groupId = state.selectedGroupId || state.profile?.group_id;
     const group = state.groups.find(g => g.id === groupId);
-    const groupName = group ? group.name : 'Все_группы';
+    const groupName = group ? group.name : (currentLang === 'uz' ? 'Barcha_guruhlar' : 'Все_группы');
 
-    // Calculate date range
+    const labels = currentLang === 'uz'
+        ? {
+            day: 'Kun', week: 'Hafta', month: 'Oy', halfyear: '6 oy',
+            present: 'Keldi', absent: 'Kelmadi', excused: 'Uzrli',
+            lateSuffix: ' (Kechikdi)', earlySuffix: ' (Erta ketdi)',
+            noMarkShort: '—',
+            colStudent: 'Talaba F.I.O.',
+            sheet: 'Davomat',
+            preparing: "Ma'lumotlar tayyorlanmoqda...",
+            success: 'Excel fayli yuklab olindi! ✅',
+            exportError: 'Eksportda xatolik'
+        }
+        : {
+            day: 'День', week: 'Неделя', month: 'Месяц', halfyear: '6 месяцев',
+            present: 'Присутствует', absent: 'Отсутствует', excused: 'Уважительная',
+            lateSuffix: ' (Опоздал)', earlySuffix: ' (Ушёл раньше)',
+            noMarkShort: '—',
+            colStudent: 'ФИО Студента',
+            sheet: 'Посещаемость',
+            preparing: 'Подготовка данных...',
+            success: 'Excel файл скачан! ✅',
+            exportError: 'Ошибка при экспорте'
+        };
+
     const today = new Date();
     const toDate = today.toISOString().split('T')[0];
     let fromDate = toDate;
-    let periodLabel = 'День';
+    let periodLabel = labels.day;
 
     if (period === 'week') {
         const d = new Date(today); d.setDate(d.getDate() - 6);
-        fromDate = d.toISOString().split('T')[0]; periodLabel = 'Неделя';
+        fromDate = d.toISOString().split('T')[0]; periodLabel = labels.week;
     } else if (period === 'month') {
         const d = new Date(today); d.setDate(d.getDate() - 29);
-        fromDate = d.toISOString().split('T')[0]; periodLabel = 'Месяц';
+        fromDate = d.toISOString().split('T')[0]; periodLabel = labels.month;
     } else if (period === 'halfyear') {
         const d = new Date(today); d.setDate(d.getDate() - 179);
-        fromDate = d.toISOString().split('T')[0]; periodLabel = '6 месяцев';
+        fromDate = d.toISOString().split('T')[0]; periodLabel = labels.halfyear;
     }
 
-    // Базовый статус и дополнительная информация (в скобках)
     const baseStatusMap = {
-        present: 'Присутствует',
-        absent: 'Отсутствует',
-        excused: 'Уважительная',
-        late: 'Присутствует',
-        left_early: 'Присутствует'
+        present: labels.present,
+        absent: labels.absent,
+        excused: labels.excused,
+        late: labels.present,
+        left_early: labels.present
     };
     const detailSuffixMap = {
-        late: ' (Опоздал)',
-        left_early: ' (Ушёл раньше)'
+        late: labels.lateSuffix,
+        left_early: labels.earlySuffix
+    };
+
+    const formatDateHeader = (iso) => {
+        const [y, m, d] = iso.split('-');
+        return `${d}.${m}`;
+    };
+
+    const buildDateRange = (from, to) => {
+        const dates = [];
+        const cursor = new Date(`${from}T00:00:00`);
+        const end = new Date(`${to}T00:00:00`);
+        while (cursor <= end) {
+            dates.push(cursor.toISOString().split('T')[0]);
+            cursor.setDate(cursor.getDate() + 1);
+        }
+        return dates;
+    };
+
+    const formatStatusCell = (att) => {
+        if (!att?.status) return labels.noMarkShort;
+        const base = baseStatusMap[att.status] || labels.noMarkShort;
+        const suffix = detailSuffixMap[att.status] || '';
+        const comment = att.comment ? ` (${att.comment})` : '';
+        return `${base}${suffix}${comment}`;
     };
 
     try {
-        showToast('Подготовка данных...', 'success');
+        showToast(labels.preparing, 'success');
 
         let attendanceData;
         if (period === 'day') {
-            // Use already loaded data for today
-            attendanceData = state.attendance;
+            attendanceData = state.attendance.map(a => ({ ...a, date: toDate }));
         } else {
-            // Fetch range from server
             const url = groupId
                 ? `/api/attendance?group_id=${groupId}&date_from=${fromDate}&date_to=${toDate}`
                 : `/api/attendance?date_from=${fromDate}&date_to=${toDate}`;
             attendanceData = await apiClient.get(url);
         }
 
-        let data;
-        if (period === 'day') {
-            // Single day: Student | Status (с основной и доп. информацией) | Comment(tutor only)
-            data = state.students.map(s => {
-                const att = attendanceData.find(a => a.student_id === s.id);
-                let statusText = 'Нет отметки';
-                if (att?.status) {
-                    const base = baseStatusMap[att.status] || 'Нет отметки';
-                    const suffix = detailSuffixMap[att.status] || '';
-                    statusText = base + suffix;
-                }
-                const row = { 'ФИО Студента': s.full_name, 'Статус': statusText };
-                if (isTutor) row['Комментарий'] = att?.comment || '';
-                return row;
-            });
-        } else {
-            // Multi-day: Student | Date | Status | Comment(tutor only)
-            data = [];
-            state.students.forEach(s => {
-                const studentAtt = attendanceData.filter(a => a.student_id === s.id);
-                if (studentAtt.length === 0) {
-                    const row = { 'ФИО Студента': s.full_name, 'Дата': '—', 'Статус': 'Нет данных' };
-                    if (isTutor) row['Комментарий'] = '';
-                    data.push(row);
-                } else {
-                    studentAtt.forEach(att => {
-                        let statusText = 'Нет отметки';
-                        if (att.status) {
-                            const base = baseStatusMap[att.status] || 'Нет отметки';
-                            const suffix = detailSuffixMap[att.status] || '';
-                            statusText = base + suffix;
-                        }
-                        const row = { 'ФИО Студента': s.full_name, 'Дата': att.date, 'Статус': statusText };
-                        if (isTutor) row['Комментарий'] = att.comment || '';
-                        data.push(row);
-                    });
-                }
-            });
-        }
+        const dates = buildDateRange(fromDate, toDate);
+        const attMap = new Map(attendanceData.map(a => [`${a.student_id}|${a.date}`, a]));
 
-        const worksheet = XLSX.utils.json_to_sheet(data);
+        const aoa = [];
+        aoa.push([labels.colStudent, ...dates.map(formatDateHeader)]);
+
+        state.students.forEach(student => {
+            const row = [student.full_name];
+            dates.forEach(date => {
+                const att = attMap.get(`${student.id}|${date}`);
+                row.push(formatStatusCell(att));
+            });
+            aoa.push(row);
+        });
+
+        const worksheet = XLSX.utils.aoa_to_sheet(aoa);
+        worksheet['!cols'] = [{ wch: 36 }, ...dates.map(() => ({ wch: 18 }))];
+
         const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Посещаемость');
-        XLSX.writeFile(workbook, `Vedomost_${groupName}_${periodLabel}_${toDate}.xlsx`);
-        showToast('Excel файл скачан! ✅');
+        XLSX.utils.book_append_sheet(workbook, worksheet, labels.sheet);
+        XLSX.writeFile(workbook, `TDTrU_Davomat_${groupName}_${periodLabel}_${toDate}.xlsx`);
+        showToast(labels.success);
     } catch (err) {
         console.error('Export error:', err);
-        showToast('Ошибка при экспорте', 'error');
+        showToast(labels.exportError, 'error');
     }
 };
 
 // Запуск
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM готов, запуск Vedomost PRO...");
+    console.log("DOM готов, запуск TDTrU Davomat...");
     init();
 });
+
+
+
+
+
+
+
 
 
