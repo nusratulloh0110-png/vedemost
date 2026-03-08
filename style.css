@@ -1316,6 +1316,11 @@ body.app-auth .lang-float {
 /* ===== Final UI Overrides ===== */
 button {
   font-family: var(--font-main);
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: inherit;
 }
 
 /* Cleaner journal action buttons (remove browser default white style) */
@@ -1421,4 +1426,46 @@ body:not(.app-auth) .lang-float {
 
 body:not(.app-auth) .lang-float-btn {
   min-width: 56px;
+}
+
+select, option {
+  background: #0f1d31;
+  color: var(--text-primary);
+}
+
+/* Mobile reliability + tap targets */
+@media (max-width: 768px) {
+  .journal-mobile-list {
+    padding-bottom: 0.5rem;
+  }
+
+  .jc-card {
+    padding: 1rem;
+    border-radius: 1rem;
+  }
+
+  .status-btn-row--mobile {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .status-btn-row--mobile .status-btn {
+    min-height: 48px;
+    padding: 0.72rem 0.3rem;
+    font-size: 12px;
+    letter-spacing: 0.01em;
+    touch-action: manipulation;
+  }
+
+  .row-option-btn {
+    min-height: 36px;
+    padding: 0.45rem 0.65rem;
+    font-size: 0.72rem;
+  }
+
+  .row-delete-btn {
+    min-width: 36px;
+    min-height: 36px;
+  }
 }

@@ -160,6 +160,25 @@ function normalizeStatus(status) {
     return (status === 'late' || status === 'left_early') ? 'present' : status;
 }
 
+function nearestWorkingDate(dateStr) {
+    const d = new Date(`${dateStr}T00:00:00`);
+    const day = d.getDay();
+    if (day === 6) d.setDate(d.getDate() - 1); // Saturday -> Friday
+    if (day === 0) d.setDate(d.getDate() - 2); // Sunday -> Friday
+    return d.toISOString().split('T')[0];
+}
+
+function findAttendanceForCurrentDate(studentId) {
+    return state.attendance.find(a => a.student_id === studentId && a.date === state.currentDate);
+}
+
+function upsertAttendanceForCurrentDate(studentId, patch) {
+    const idx = state.attendance.findIndex(a => a.student_id === studentId && a.date === state.currentDate);
+    const next = { student_id: studentId, date: state.currentDate, ...(idx >= 0 ? state.attendance[idx] : {}), ...patch };
+    if (idx >= 0) state.attendance[idx] = next;
+    else state.attendance.push(next);
+}
+
 // Смена языка
 window.changeLang = (lang) => {
     currentLang = lang;
@@ -209,7 +228,7 @@ let state = {
     selectedGroupId: null,
     students: [],
     attendance: [],
-    currentDate: new Date().toISOString().split('T')[0],
+    currentDate: nearestWorkingDate(new Date().toISOString().split('T')[0]),
     activeTab: 'journal', // 'journal', 'groups', 'settings', 'students'
     loading: false,
     loadingStep: '',
@@ -1226,11 +1245,15 @@ function attachAppEvents() {
 
     const datePicker = document.getElementById('date-picker');
     if (datePicker) datePicker.onchange = async (e) => {
-        state.currentDate = e.target.value;
-        if (isWeekendDate(state.currentDate)) {
+        const selectedDate = e.target.value;
+        if (isWeekendDate(selectedDate)) {
+            state.currentDate = nearestWorkingDate(selectedDate);
+            e.target.value = state.currentDate;
             showToast(currentLang === 'uz'
                 ? "Shanba/yakshanba kunlari davomat belgilash mumkin emas"
                 : "В субботу и воскресенье отмечать посещаемость нельзя", 'error');
+        } else {
+            state.currentDate = selectedDate;
         }
         await loadData();
         render(); // <-- Вот это вернет Журнал на экран
@@ -1254,16 +1277,16 @@ window.updateStatus = async (studentId, status) => {
         return;
     }
 
-    const existingStatus = state.attendance.find(a => a.student_id === studentId)?.status;
+    const existingStatus = findAttendanceForCurrentDate(studentId)?.status;
     if (normalizeStatus(existingStatus) === status) return;
 
     state.updatingStatus = studentId;
-    render();
 
     try {
         const groupId = state.profile?.group_id || state.selectedGroupId;
         await apiClient.post('/api/attendance', { student_id: studentId, group_id: groupId, status, date: state.currentDate });
-        await loadData();
+        const prev = findAttendanceForCurrentDate(studentId);
+        upsertAttendanceForCurrentDate(studentId, { status, comment: prev?.comment || '' });
     } catch (err) {
         showToast((currentLang === 'uz' ? 'Xatolik: ' : 'Ошибка: ') + err.message, 'error');
     } finally {
@@ -1280,7 +1303,7 @@ window.openOptions = (studentId) => {
         return;
     }
     const student = state.students.find(s => s.id === studentId);
-    const existing = state.attendance.find(a => a.student_id === studentId);
+    const existing = findAttendanceForCurrentDate(studentId);
 
     const modalHtml = `
         <div class="modal-overlay animate-fade-in" id="options-modal">
@@ -1325,8 +1348,9 @@ window.saveOptions = async (studentId) => {
     try {
         const groupId = state.profile?.group_id || state.selectedGroupId;
         await apiClient.post('/api/attendance', { student_id: studentId, group_id: groupId, status, date: state.currentDate, comment });
+        upsertAttendanceForCurrentDate(studentId, { status, comment });
         closeModal();
-        await loadData();
+        render();
     } catch (err) {
         showToast((currentLang === 'uz' ? 'Xatolik: ' : 'Ошибка: ') + err.message, 'error');
     }
@@ -1605,6 +1629,10 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log("DOM готов, запуск TDTrU Davomat...");
     init();
 });
+
+
+
+
 
 
 
