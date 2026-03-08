@@ -150,6 +150,12 @@ function t(key) {
     return TRANSLATIONS[currentLang]?.[key] ?? TRANSLATIONS['uz']?.[key] ?? key;
 }
 
+function isWeekendDate(dateStr) {
+    if (!dateStr) return false;
+    const day = new Date(`${dateStr}T00:00:00`).getDay();
+    return day === 0 || day === 6;
+}
+
 // Смена языка
 window.changeLang = (lang) => {
     currentLang = lang;
@@ -578,6 +584,7 @@ function renderMobileNav() {
 function renderHeader(title, subtitle) {
     const _title = title || t('journal_title');
     const _subtitle = subtitle || t('journal_subtitle');
+    const weekendLocked = state.activeTab === 'journal' && isWeekendDate(state.currentDate);
     return `
         <header class="journal-header animate-fade-in">
             <h1 class="title-responsive">${_title}</h1>
@@ -600,6 +607,13 @@ function renderHeader(title, subtitle) {
                 </select>
                 ` : ''}
             </div>
+            ${weekendLocked ? `
+            <div class="weekend-note">
+                ${currentLang === 'uz'
+            ? "Dam olish kuni: shanba/yakshanba uchun davomat belgilash o'chirilgan."
+            : "Выходной день: для субботы/воскресенья отметка посещаемости отключена."}
+            </div>
+            ` : ''}
         </div>
         ` : ''}
     `;
@@ -1161,6 +1175,7 @@ function renderStatusSelector(studentId, currentStatus, isMobile = false) {
     const effectiveStatus = (currentStatus === 'late' || currentStatus === 'left_early') ? 'present' : currentStatus;
     const detailBadge = currentStatus === 'late' ? ` (${currentLang === 'uz' ? 'Kech' : 'Поздн.'})` :
         currentStatus === 'left_early' ? ` (${currentLang === 'uz' ? 'Erta' : 'Рано'})` : '';
+    const weekendLocked = isWeekendDate(state.currentDate);
 
     const statuses = [
         { id: 'present', label: t('status_present') + detailBadge, activeClass: 'status-btn-present' },
@@ -1176,7 +1191,8 @@ function renderStatusSelector(studentId, currentStatus, isMobile = false) {
         return `<button
                     id="status-${studentId}-${s.id}"
                     onclick="updateStatus('${studentId}', '${s.id}')"
-                    class="status-btn ${isActive ? s.activeClass : 'status-btn-inactive'} ${isUpdating ? 'status-btn-loading' : ''}"
+                    class="status-btn ${isActive ? s.activeClass : 'status-btn-inactive'} ${isUpdating ? 'status-btn-loading' : ''} ${weekendLocked ? 'status-btn-disabled' : ''}"
+                    ${weekendLocked ? 'disabled' : ''}
                 >${s.label}</button>`;
     }).join('')}
         </div>
@@ -1202,6 +1218,11 @@ function attachAppEvents() {
     document.getElementById('logout-btn')?.addEventListener('click', logout);
     document.getElementById('date-picker')?.addEventListener('change', async (e) => {
         state.currentDate = e.target.value;
+        if (isWeekendDate(state.currentDate)) {
+            showToast(currentLang === 'uz'
+                ? "Shanba/yakshanba kunlari davomat belgilash mumkin emas"
+                : "В субботу и воскресенье отмечать посещаемость нельзя", 'error');
+        }
         await loadData();
         render(); // <-- Вот это вернет Журнал на экран
     });
@@ -1215,6 +1236,12 @@ function attachAppEvents() {
 // Global functions for inline events
 window.updateStatus = async (studentId, status) => {
     if (state.updatingStatus) return; // Prevent multiple clicks
+    if (isWeekendDate(state.currentDate)) {
+        showToast(currentLang === 'uz'
+            ? "Shanba/yakshanba kunlari davomat belgilash mumkin emas"
+            : "В субботу и воскресенье отмечать посещаемость нельзя", 'error');
+        return;
+    }
 
     state.updatingStatus = studentId;
     render();
@@ -1232,6 +1259,12 @@ window.updateStatus = async (studentId, status) => {
 };
 
 window.openOptions = (studentId) => {
+    if (isWeekendDate(state.currentDate)) {
+        showToast(currentLang === 'uz'
+            ? "Dam olish kunlari opsiyalarni o'zgartirib bo'lmaydi"
+            : "В выходные нельзя менять опции посещаемости", 'error');
+        return;
+    }
     const student = state.students.find(s => s.id === studentId);
     const existing = state.attendance.find(a => a.student_id === studentId);
 
@@ -1266,6 +1299,12 @@ window.openOptions = (studentId) => {
 };
 
 window.saveOptions = async (studentId) => {
+    if (isWeekendDate(state.currentDate)) {
+        showToast(currentLang === 'uz'
+            ? "Dam olish kunlari opsiyalarni o'zgartirib bo'lmaydi"
+            : "В выходные нельзя менять опции посещаемости", 'error');
+        return;
+    }
     const status = document.getElementById('modal-status').value;
     const comment = document.getElementById('modal-comment').value;
 
@@ -1552,6 +1591,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log("DOM готов, запуск TDTrU Davomat...");
     init();
 });
+
 
 
 

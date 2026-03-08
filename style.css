@@ -1,9 +1,9 @@
-:root {
+﻿:root {
   /* Colors - Deep Slate and Emerald Theme */
-  --bg-primary: #0a0f18;
-  --bg-secondary: #0f172a;
-  --surface: rgba(30, 41, 59, 0.7);
-  --surface-hover: rgba(51, 65, 85, 0.8);
+  --bg-primary: #060d1a;
+  --bg-secondary: #111f34;
+  --surface: rgba(27, 43, 68, 0.78);
+  --surface-hover: rgba(38, 58, 86, 0.9);
 
   --accent-primary: #10b981;
   /* Emerald */
@@ -14,8 +14,8 @@
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
 
-  --border-color: rgba(255, 255, 255, 0.1);
-  --border-glow: rgba(16, 185, 129, 0.3);
+  --border-color: rgba(148, 163, 184, 0.2);
+  --border-glow: rgba(16, 185, 129, 0.38);
 
   --status-present: #10b981;
   --status-absent: #ef4444;
@@ -23,10 +23,10 @@
   --status-late: #8b5cf6;
   --status-early: #ec4899;
 
-  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 18px 40px -14px rgba(2, 8, 23, 0.65), 0 8px 20px -10px rgba(2, 8, 23, 0.5);
   --glass-blur: blur(16px);
 
-  --font-main: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-main: 'Manrope', 'Inter', system-ui, -apple-system, sans-serif;
 
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -40,8 +40,9 @@
 body {
   background-color: var(--bg-primary);
   background-image:
-    radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.08) 0px, transparent 50%);
+    radial-gradient(at 12% 6%, rgba(16, 185, 129, 0.16) 0px, transparent 56%),
+    radial-gradient(at 88% 95%, rgba(14, 116, 144, 0.22) 0px, transparent 52%),
+    linear-gradient(140deg, #040a14 0%, #051426 42%, #041225 100%);
   color: var(--text-primary);
   font-family: var(--font-main);
   min-height: 100vh;
@@ -323,7 +324,7 @@ body {
 
 /* Sidebar */
 .sidebar {
-  width: 240px;
+  width: 250px;
   height: 100vh;
   position: fixed;
   left: 0;
@@ -420,7 +421,7 @@ body {
 
 /* Main Content */
 .main-content {
-  margin-left: 240px;
+  margin-left: 250px;
   padding: 1.5rem 2rem;
   max-width: 1400px;
 }
@@ -441,7 +442,7 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent-primary), #059669);
+  background: linear-gradient(135deg, #16c58d, #0f9f76);
   color: white;
   box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
 }
@@ -567,7 +568,7 @@ header {
 
 /* Inputs */
 .input-premium {
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(12, 21, 35, 0.78);
   border: 1px solid var(--border-color);
   border-radius: 0.875rem;
   padding: 0.875rem 1.25rem;
@@ -579,6 +580,7 @@ header {
 
 .input-premium:focus {
   border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.16);
 }
 
 /* Tab Management */
@@ -1290,3 +1292,23 @@ body.app-auth .lang-float {
     padding: 0 0.7rem;
   }
 }
+
+
+.weekend-note {
+  margin-top: 0.5rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 0.75rem;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.status-btn-disabled {
+  pointer-events: none;
+  opacity: 0.55;
+  filter: grayscale(0.2);
+}
+
+
